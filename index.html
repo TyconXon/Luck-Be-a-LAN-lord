@@ -1,0 +1,730 @@
+<html>
+    <head>
+        <title>Luck be a Landlord</title>
+
+        <script src="js/jquery.js"></script>
+        <script src="js/underscore.js"></script>
+
+        <style>
+            html{
+                background-color: dimgray;
+            }
+
+            #machine{
+                display:grid;
+                grid-template-columns: repeat(5, 1fr); /* Creates 2 equal-width columns */
+                gap: 2px; /* Adds space between grid items */
+                width: 25%;
+                margin:auto;
+            }
+            
+            .slot{
+                background-color: red;
+                text-align: center;
+                vertical-align: middle;
+                line-height: 15px;
+                
+                display: inline-block;
+                aspect-ratio: 1/1;
+                width: 55px;
+                height: 55px;
+                /* white-space: wrap; */
+                /* text-overflow: clip; */
+                border: 2px black solid;
+            }
+            .slot:hover{
+                outline: blue 2px solid;
+                cursor: help;
+            }
+            button{
+                display:block;
+                width: 300px;
+                margin: auto;
+                margin-top: 1%;
+
+            }
+            h1{
+                text-align:center;
+            }
+
+        </style>
+
+        <script>
+            function snapped(value, increment) {
+                return Math.round(value / increment) * increment;
+            }
+
+            const genRanHex = size => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+            Number.prototype.clamp = function(min, max) {
+                return Math.min(Math.max(this, min), max); 
+            };
+            function getAdjacent(a, x, y, r) {
+                var minX = Math.max(x - r, 0),
+                    maxX = Math.min(x + r, a[0].length - 1),
+                    minY = Math.max(y - r, 0),
+                    maxY = Math.min(y + r, a.length - 1),
+                    xx, yy,
+                    result = [];
+
+                for (yy = minY; yy <= maxY; yy++) {
+                    for (xx = minX; xx <= maxX; xx++) {
+                        if (x !== xx || y !== yy) {
+                            result.push(a[yy][xx]);
+                        }
+                    }
+                }
+                return result;
+            }
+
+            function loadLocalSprite(data) {
+                var spr = new Image();
+                spr.src = data;
+                return spr;
+            }
+            function loadLocalAudio(data) {
+                var snd = new Audio(data);
+                document.body.appendChild(snd);
+                return snd;
+            }
+
+            function playSound(snd) {
+                snd.currentTime = 0;
+                snd.play();
+            }
+
+            //Values = String[], Weights = Int[];
+            function randomByWeight(values, weights) {
+                let total = 0
+            
+                // Sum total of weights
+                weights.forEach(weight => {
+                    total += weight
+                })
+            
+                // Random a number between [1, total]
+                const random = Math.random() * total // [0,total]
+            
+                // Seek cursor to find which area the random is in
+                let cursor = 0
+                for (let i = 0; i < weights.length; i++) {
+                    cursor += weights[i]
+                    if (cursor >= random) {
+                        return values[i]
+                    }
+                }
+                return "never go here"
+            }
+
+            // Version 4.0
+            const pSBC = (p, c0, c1, l) => {
+                let r, g, b, P, f, t, h, i = parseInt, m = Math.round, a = typeof (c1) == "string";
+                if (typeof (p) != "number" || p < -1 || p > 1 || typeof (c0) != "string" || (c0[0] != 'r' && c0[0] != '#') || (c1 && !a)) return null;
+                if (!this.pSBCr) this.pSBCr = (d) => {
+                    let n = d.length, x = {};
+                    if (n > 9) {
+                        [r, g, b, a] = d = d.split(","), n = d.length;
+                        if (n < 3 || n > 4) return null;
+                        x.r = i(r[3] == "a" ? r.slice(5) : r.slice(4)), x.g = i(g), x.b = i(b), x.a = a ? parseFloat(a) : -1
+                    } else {
+                        if (n == 8 || n == 6 || n < 4) return null;
+                        if (n < 6) d = "#" + d[1] + d[1] + d[2] + d[2] + d[3] + d[3] + (n > 4 ? d[4] + d[4] : "");
+                        d = i(d.slice(1), 16);
+                        if (n == 9 || n == 5) x.r = d >> 24 & 255, x.g = d >> 16 & 255, x.b = d >> 8 & 255, x.a = m((d & 255) / 0.255) / 1000;
+                        else x.r = d >> 16, x.g = d >> 8 & 255, x.b = d & 255, x.a = -1
+                    } return x
+                };
+                h = c0.length > 9, h = a ? c1.length > 9 ? true : c1 == "c" ? !h : false : h, f = this.pSBCr(c0), P = p < 0, t = c1 && c1 != "c" ? this.pSBCr(c1) : P ? { r: 0, g: 0, b: 0, a: -1 } : { r: 255, g: 255, b: 255, a: -1 }, p = P ? p * -1 : p, P = 1 - p;
+                if (!f || !t) return null;
+                if (l) r = m(P * f.r + p * t.r), g = m(P * f.g + p * t.g), b = m(P * f.b + p * t.b);
+                else r = m((P * f.r ** 2 + p * t.r ** 2) ** 0.5), g = m((P * f.g ** 2 + p * t.g ** 2) ** 0.5), b = m((P * f.b ** 2 + p * t.b ** 2) ** 0.5);
+                a = f.a, t = t.a, f = a >= 0 || t >= 0, a = f ? a < 0 ? t : t < 0 ? a : a * P + t * p : 0;
+                if (h) return "rgb" + (f ? "a(" : "(") + r + "," + g + "," + b + (f ? "," + m(a * 1000) / 1000 : "") + ")";
+                else return "#" + (4294967296 + r * 16777216 + g * 65536 + b * 256 + (f ? m(a * 255) : 0)).toString(16).slice(1, f ? undefined : -2)
+            }
+
+            const delay = (delayInms) => {
+                return new Promise(resolve => setTimeout(resolve, delayInms));
+            };
+
+        </script>
+
+        
+    </head>
+    <body>
+        <script src="js/conzole.js"></script>
+
+        <h1>Luck be a Landlord</h1>
+        <div style="width:50%;margin:auto;text-align:center;">
+            <span>Coins: <span id="coins">00</span></span>
+            <br>
+            <span>Time: <span id="coins">7</span></span>
+        </div>
+        <div id="machine">
+            
+        </div>
+        <button id="lever">SPIN</button>
+
+        <script>
+            const slots = [
+                [],
+                [],
+                [],
+                []
+            ];
+            function setSlot(x,y,a){
+                a.e = $(`#s${x}x${y}y`)
+                a.e.text(a.symbol.name);
+                a.e.css({"background-color":a.symbol.name == "nothing"?"white":"red", "color": "black"})
+                // console.log(x,y)
+                a.x = x;
+                a.y = y;
+                slots[x][y] = a
+                return slots[x][y];
+            }
+            function adjacentSlots(x,y){
+                let adjacents = getAdjacent(slots,x,y,1);
+                return adjacents;           
+            }
+
+            async function eat(food, self){
+                let counting = 0;
+                for (element of adjacentSlots(self.y, self.x)){
+                    if (element.symbol.name == food) {
+                        counting += 1;
+                        element.e.text(food);
+                        element.e.css("outline", "white 2px solid");
+                        await delay(500);
+                        element.e.text("");
+                        await delay(500);
+                        element.e.css("outline", "none");
+                        destroySymbol(element)
+
+                    }
+                };
+                return counting;
+            }
+            async function eatType(type, self){
+                let counting = 0;
+                for (element of adjacentSlots(self.y, self.x)){
+                    if (element.symbol[type] > 0) {
+                        counting += element.symbol[type];
+                        element.e.text(element.symbol.name);
+                        element.e.css("outline", "white 2px solid");
+                        await delay(500);
+                        element.e.text("");
+                        await delay(500);
+                        element.e.css("outline", "none");
+                        destroySymbol(element)
+
+                    }
+                };
+                return counting;
+            }
+            async function bonus(food, self){
+                let counting = 0;
+                for (element of adjacentSlots(self.y, self.x)){
+                    if (element.symbol.name == food) {
+                        counting += 1;
+                        element.e.text(food);
+                        element.e.css("outline", "white 2px solid");
+                        await delay(500);
+                        element.e.css("outline", "none");
+                    }
+                };
+                return counting;
+            }
+
+            function addSymbol(symbol){
+                let s = new SymbolInstance(symbol);
+                player.inventory.push(s);
+
+                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "nothing"})
+                if (nonNothings.length < 20){
+                    player.inventory.forEach((element)=>{
+                        if(element.symbol.name == "nothing" && player.inventory.length - nonNothings.length > 20 - nonNothings.length){
+                            player.inventory = _.without(player.inventory, element);
+                        }
+                    });
+                    // console.log(player.inventory.length - nonNothings.length, nonNothings.length)
+                }else{
+                    player.inventory = nonNothings;
+                }
+                return s;
+            };
+            function destroySymbol(symbolInstance){
+                player.inventory = _.without(player.inventory, symbolInstance);
+
+                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "nothing"})
+                if(nonNothings.length < 20){
+                    addSymbol(WAREHOUSE.NOTHING);
+                }
+                let doDestroy = 0;
+                if(symbolInstance.symbol.onDestroy) doDestroy = symbolInstance.symbol.onDestroy(symbolInstance)
+                player.coins += doDestroy
+                return doDestroy
+            }
+
+            const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6};
+            
+
+            const _player = {
+                inventory : [],
+                status : STATES.idle,
+                coins : 0,
+            }
+
+            const Playerhandler = {
+                get: function(target, prop) {
+                    // console.log(`Getting property: ${prop}`);
+                    return target[prop];
+                },
+                set: function(target, prop, value) {
+                    console.log(`Setting property: ${prop} to ${value}`);
+                    switch (prop) {
+                        case "coins":
+                            target[prop] = Math.max(0,value);
+                            $("#coins").text(target[prop])
+                            break;
+                        case "status":
+                            target[prop] = value;
+                            $("#lever").prop("disabled", value != STATES.idle)
+                            break;
+                        default:
+                            target[prop] = value;
+                            break;
+                    }
+                    return true; // Indicate success
+                }
+            };
+
+            const player = new Proxy(_player, Playerhandler);
+            
+
+            class Symbol {
+                static warehouse = [];
+                constructor(parameters){
+                    
+                    let requiredParameters = ["name", "rarity", "calculate"];
+                    requiredParameters.forEach(element => {
+                        if (!Object.keys(parameters).includes(element)) {
+                            console.error("Symbol parameters doesn't include " + element);
+                        }
+                    });
+                    for (const [key, value] of Object.entries(parameters)) {
+ 			            this[key] = value
+                    }
+
+                    this.id = Symbol.warehouse.push(this) - 1;
+                    
+                }
+
+            }
+            const WAREHOUSE = {
+                NOTHING : new Symbol({name: "nothing", rarity: -1, skip:1, calculate: (self)=>{return 0;}}),
+                CAT: new Symbol({name: "cat", rarity: 0, calculate: async (self)=>{
+                    
+                    let countingCoins = 1;
+                    countingCoins += 9 * await eat("milk", self);
+
+                    return countingCoins;    
+                }}),
+
+                MILK: new Symbol({name: "milk", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+
+                ANCHOR: new Symbol({name: "anchor", rarity: 0, calculate: async(self)=>{
+                    if (((self.x == 3 || self.x == 0) && (self.y == 0 || self.y == 4))){
+                        return 5;
+                    }
+                    return 1;
+                }, aquatic: 1}),
+
+                BANANA: new Symbol({name: "banana", rarity: 0, calculate: async(self)=>{
+                    return 1;
+                }, onDestroy: (self)=>{
+                    addSymbol(WAREHOUSE.BANANA_PEEL);
+                }, monkeyLikes: 1, fruit: 1,}),
+
+                BANANA_PEEL: new Symbol({name: "banana peel", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+
+                BEE: new Symbol({name: "bee", rarity: 0, calculate: async(self)=>{
+                    return 1 + await bonus("flower", self);
+                }}),
+
+                BEER: new Symbol({name: "beer", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+                
+                BOUNTY_HUNTER: new Symbol({name: "bounty hunter", rarity: 0, calculate: async(self)=>{
+                    let countingCoins = 1;
+                    countingCoins += await eat("thief", self) * 20 
+
+                    return countingCoins; 
+                }, human: 1}),
+
+                BUBBLE: new Symbol({name: "bubble", rarity: 0, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 4;
+                    if(self.timer == 1){
+                        destroySymbol(self);
+                        self.e.text("pop");
+                        self.e.css({"color":"red"});                    
+                    }
+                    return 2;    
+                }}),
+
+                CANDY: new Symbol({name: "candy", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }, babyLikes: 1,}),
+
+                CHEESE: new Symbol({name: "cheese", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+
+                CHERRY: new Symbol({name: "cherry", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                },fruit: 1,}),
+
+                COAL: new Symbol({name: "coal", rarity: 0, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 21;
+                    if(self.timer == 1){
+                        destroySymbol(self);
+                        self.e.text("CRACK");
+                        self.e.css({"color":"red"});
+                    }
+                    return 0;   
+                }}),
+
+                COIN: new Symbol({name: "coin", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+
+                CRAB: new Symbol({name: "crab", rarity: 0, calculate: async(self)=>{
+                    let countingCoins = 0;
+                    for (element of slots[self.x]){
+                        if (element.symbol.name == "crab"){
+                            countingCoins+=1;
+                        }
+                    }
+                    return countingCoins;
+                }}),
+
+                CROW: new Symbol({name: "crow", rarity: 0, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 5;
+                    if(self.timer == 1){
+                        return -3;
+                    }
+                    return 2;   
+                }}),
+
+
+                CULTIST: new Symbol({name: "cultist", rarity: 0, calculate: async(self)=>{
+                    let countingCoins = -1;
+                    slots.forEach(row => {
+                        countingCoins += _.filter(row, (value) => {
+                          return value.symbol.name == "cultist";
+                        }).length
+                    });
+                    return countingCoins;
+                }, human: 1}),
+                
+                DOG: new Symbol({name: "dog", rarity: 0, calculate: async(self)=>{
+
+                    for (element of adjacentSlots(self.y, self.x)){
+                        if (element.symbol.human) {
+                            element.e.css("outline", "white 2px solid");
+                            await delay(500);
+                            element.e.css("outline", "none");
+                            return 3;
+                        }
+                    };
+
+                    return 1;
+                }}),
+
+                DWARF: new Symbol({name: "dwarf", rarity: 0, calculate: async (self)=>{
+                    
+                    let countingCoins = 1;
+                    for (element of adjacentSlots(self.y, self.x)){
+                        if (element.symbol.name == "beer") {
+                            countingCoins += await element.calculate() * 10;
+                            element.e.text("beer");
+                            element.e.css("outline", "white 2px solid");
+                            await delay(500);
+                            element.e.text("");
+                            await delay(500);
+                            element.e.css("outline", "none");
+                            destroySymbol(element)
+
+                        }
+                    };
+
+                    return countingCoins;    
+                }, human:1}),
+
+                EGG: new Symbol({name: "egg", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+
+                FLOWER: new Symbol({name: "flower", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+
+                GAMBLER: new Symbol({name: "gambler", rarity: 0, calculate: async(self)=>{
+                    self.savings = self.savings+1 || 1;
+                    return 1;    
+                }, onDestroy: (self)=>{
+                    return self.savings || 1;
+                },  human: 1}),
+
+                GOLDFISH: new Symbol({name: "goldfish", rarity: 0, calculate: async (self)=>{
+                    return 1 + (15 * await eat("bubble", self));    
+                }}),
+
+                GOOSE: new Symbol({name: "goose", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }, bird: 1}),
+
+                KEY: new Symbol({name: "key", rarity: 0, calculate: async(self)=>{
+                    let findBoxes = await eatType("box", self); 
+                    if (findBoxes > 0){
+                        destroySymbol(self);
+                    }
+                    return 1 + findBoxes;
+                }}),
+
+                LIGHT_BULB: new Symbol({name: "light bulb", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+
+                LOCKBOX: new Symbol({name: "lockbox", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }, box: 15}),
+
+                MAGPIE: new Symbol({name: "magpie", rarity: 0, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 5;
+                    if(self.timer == 1){
+                        return 9;
+                    }
+                    return -1;  
+                }, bird: 1}),
+
+                MINER: new Symbol({name: "miner", rarity: 0, calculate: async (self)=>{
+                    
+                    let countingCoins = 1;
+                    countingCoins += 20 * await eatType("ore", self);
+
+                    return countingCoins;    
+                }, human:1}),
+
+                MONKEY: new Symbol({name: "monkey", rarity: 0, calculate: async (self)=>{
+                    return 1 + (6 * await eatType("monkeyLikes", self));    
+                }, beast: 1}),
+
+                GOLDFISH: new Symbol({name: "goldfish", rarity: 0, calculate: async (self)=>{
+                    return 1 + (20 * await eat("cheese", self));    
+                }, beast:1}),
+
+                ORE: new Symbol({name: "ore", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }, ore:1}),
+
+                OWL: new Symbol({name: "owl", rarity: 0, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 4;
+                    if(self.timer == 1){
+                        return 2;
+                    }
+                    return 1;  
+                }, bird: 1}),
+
+                OYSTER: new Symbol({name: "oyster", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }, aquatic:1}),
+
+                PEARL: new Symbol({name: "pearl", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }, aquatic:1, rock:1}),
+
+                PRESENT: new Symbol({name: "present", rarity: 0, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 13;
+                    if(self.timer == 1){
+                        destroySymbol(self);
+                        self.e.text("open");
+                        self.e.css({"color":"red"});                        return 10;
+                    }
+                    return 0;    
+                }, babyLikes:1}),
+
+                SEED: new Symbol({name: "seed", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+                
+                SHINY_PEBBLE: new Symbol({name: "shiny pebble", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }, rock:1}),
+
+                SNAIL: new Symbol({name: "snail", rarity: 0, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 5;
+                    if(self.timer == 1){
+                        return 5;
+                    }
+                    return 0;  
+                }, aquatic: 1}),
+
+                THREE_SIDED_DIE: new Symbol({name: "d3", rarity: 0, calculate: async(self)=>{
+                    let result = _.random(1,3);
+                    if(result == 1){
+                        for (var row of slots){
+                            let fR = _.filter(row, (value) => {
+                                return value.symbol.name == "gambler";
+                            });
+                            for (const element of Object.keys(fR)) {
+                                fR[element].e.text(fR[element].symbol.name);
+                                fR[element].e.css("outline", "white 2px solid");
+                                await delay(500);
+                                fR[element].e.text("+"+destroySymbol(fR[element]));
+                                await delay(500);
+                                fR[element].e.css("outline", "none");
+                                
+                            }
+                        }
+                    }
+                    return result;
+                }, dice: 1}),
+
+                TODDLER: new Symbol({name: "toddler", rarity: 0, calculate: async (self)=>{
+                    return 1 + (6 * await eatType("babyLikes", self));    
+                }, human: 1}),
+
+                TURTLE: new Symbol({name: "turtle", rarity: 0, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 4;
+                    if(self.timer == 1){
+                        return 4;
+                    }
+                    return 0;  
+                }, aquatic: 1}),
+
+                URN: new Symbol({name: "urn", rarity: 0, calculate: async(self)=>{
+                    return 1;    
+                }}),
+
+                BAR_OF_SOAP: new Symbol({name: "bar of soap", rarity: 1, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 4;
+                    addSymbol(WAREHOUSE.BUBBLE);
+                    if(self.timer == 1){
+                        destroySymbol(self);
+                        self.e.text("slip");
+                        self.e.css({"color":"red"});
+                    }
+                    return 1;    
+                }}),
+            };
+
+            class SymbolInstance {
+                static allIds = 1;
+                constructor(symbol) {
+                    this.symbol = symbol;
+                    this.id = SymbolInstance.allIds++;
+                }
+
+                calculate() {
+                    return this.symbol.calculate(this);
+                }
+            }
+
+            function init(){
+                _.times(20, (n)=>{
+                    let x = Math.floor(n/5);
+                    let y = n%5;
+                    let currentSlot = $(`<div class="slot" id="s${x}x${y}y"></div>`);
+                    $("#machine").append(currentSlot);
+                    addSymbol(WAREHOUSE.NOTHING);
+                    setSlot(x, y, player.inventory[player.inventory.length - 1]);
+                });
+                // _.each(WAREHOUSE,(n)=>{addSymbol(n);});
+                addSymbol(WAREHOUSE.THREE_SIDED_DIE)
+                addSymbol(WAREHOUSE.GAMBLER);
+            }
+            init();
+            
+            async function spin(){
+                if (player.status != STATES.idle) return;
+
+                player.status = STATES.spinning;
+                let modifiedInventory = player.inventory;
+                _.times(20, (n)=>{
+                    let chosen = _.sample(modifiedInventory);
+                    setSlot(Math.floor(n/5), n%5, chosen);
+                    modifiedInventory = _.without(modifiedInventory, chosen)
+                });
+
+                player.status = STATES.counting;
+                let predictedCoins = 0;
+                for (const rows of slots) {
+                    for (const slot of rows) {
+                        if (!slot.symbol.skip){
+                            await delay(200);
+                            slot.e.css({"background-color":"blue", "outline":"red 3px solid"});
+                            let output = await slot.calculate();
+                            slot.e.css({"background-color":`rgb(0,${25*output},255)`});
+                            await delay(100);
+                            player.coins += output;
+                            slot.e.html((u,l)=>{return l+"<br>+"+output});
+                            slot.e.css("outline","none");
+                        }
+                    }
+                }
+
+                await delay(500);
+                giveOptions()
+
+            }
+
+            function giveOptions() {
+                player.status = STATES.choosing;
+                let names = [];
+                let weights = [];
+                let options = [];
+                try {
+                    
+                
+                _.each(WAREHOUSE, (value, key)=>{
+                    // alert(JSON.stringify(value));
+                    if(value.rarity > -1){
+                        names.push(key);
+                        weights.push(value.rarity+1);
+                    }
+                });
+                _.times(3, function(n) {
+                    let result = randomByWeight(names, weights);
+                    if(WAREHOUSE[result]){
+                        options.push(result);
+                    }
+                    // weights.splice(_.indexOf(names, result))
+                    // names.splice(_.indexOf(names, result))
+                });
+                let choice = prompt(`1: ${WAREHOUSE[options[0]].name}\n2: ${WAREHOUSE[options[1]].name}\n3: ${WAREHOUSE[options[2]].name}\n4: skip`);
+                if(choice != 4){
+                    addSymbol(WAREHOUSE[options[choice-1]]);
+                }
+
+                } catch (error) {
+                    console.error(error);
+                }
+                player.status = STATES.idle;
+            }
+
+
+            $('#lever').on("click", function () {
+                spin();
+            });
+            document.addEventListener("keydown", ev => {
+                if (ev.key == " "){
+                    spin();
+                }
+            });
+        </script>
+    </body>
+</html>
