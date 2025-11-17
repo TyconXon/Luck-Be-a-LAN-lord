@@ -289,9 +289,7 @@
                     switch (prop) {
                         case "coins":
                             target[prop] = value;
-                            if ( value < 0 ){
-                                document.write("You've failed to pay rent and you've been evicted!");
-                            }
+                            
                             $("#coins").text(target[prop])
                             break;
                         case "status":
@@ -666,6 +664,9 @@
                 if (player.status != STATES.idle) return;
                 player.spins -= 1;
                 player.coins -= 1;
+                if ( player.coins < 0 ){
+                    document.write("You don't have enough money to spin and you've been evicted!");
+                }
                 
                 player.status = STATES.spinning;
                 let modifiedInventory = player.inventory;
@@ -697,6 +698,7 @@
                     alert(`you must pay rent! it costs ${rentPrice[player.payments]} and you have ${player.coins}` )
                     player.coins -= rentPrice[player.payments];
                     if(player.coins < 0){
+                        document.write("You've failed to pay rent and you've been evicted!");
                         return;
                     }
                     alert(`You paid rent!`)
