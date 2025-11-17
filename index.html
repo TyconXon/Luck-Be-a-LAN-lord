@@ -157,7 +157,7 @@
         <div style="width:50%;margin:auto;text-align:center;">
             <span>Coins: <span id="coins">00</span></span>
             <br>
-            <span>Time: <span id="coins">7</span></span>
+            <span><span id="time">?</span></span>
         </div>
         <div id="machine">
             
@@ -171,10 +171,13 @@
                 [],
                 []
             ];
+            const rentSpins = [5,5,6,6,7,7,8,8,9,9,10,10,10]
+            const rentPrice = [25,50,100,150,225,300,350,425,575,625,675,777,1000]
+
             function setSlot(x,y,a){
                 a.e = $(`#s${x}x${y}y`)
                 a.e.text(a.symbol.name);
-                a.e.css({"background-color":a.symbol.name == "nothing"?"white":"red", "color": "black"})
+                a.e.css({"background-color":a.symbol.name == "nothing"?"gray":"red", "color": "black"})
                 // console.log(x,y)
                 a.x = x;
                 a.y = y;
@@ -270,7 +273,10 @@
             const _player = {
                 inventory : [],
                 status : STATES.idle,
-                coins : 0,
+                coins : 1,
+                payments : 0,
+                spins : rentSpins[0],
+                
             }
 
             const Playerhandler = {
@@ -282,12 +288,19 @@
                     console.log(`Setting property: ${prop} to ${value}`);
                     switch (prop) {
                         case "coins":
-                            target[prop] = Math.max(0,value);
+                            target[prop] = value;
+                            if ( value < 0 ){
+                                document.write("You've failed to pay rent and you've been evicted!");
+                            }
                             $("#coins").text(target[prop])
                             break;
                         case "status":
                             target[prop] = value;
                             $("#lever").prop("disabled", value != STATES.idle)
+                            break;
+                        case "spins":
+                            target[prop] = Math.max(0,value);
+                            $("#time").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
                             break;
                         default:
                             target[prop] = value;
@@ -651,7 +664,9 @@
             
             async function spin(){
                 if (player.status != STATES.idle) return;
-
+                player.spins -= 1;
+                player.coins -= 1;
+                
                 player.status = STATES.spinning;
                 let modifiedInventory = player.inventory;
                 _.times(20, (n)=>{
@@ -678,6 +693,16 @@
                 }
 
                 await delay(500);
+                if(player.spins == 0){
+                    alert(`you must pay rent! it costs ${rentPrice[player.payments]} and you have ${player.coins}` )
+                    player.coins -= rentPrice[player.payments];
+                    if(player.coins < 0){
+                        return;
+                    }
+                    alert(`You paid rent!`)
+                    player.payments += 1;
+                    player.spins = rentSpins[player.payments]
+                }
                 giveOptions()
 
             }
