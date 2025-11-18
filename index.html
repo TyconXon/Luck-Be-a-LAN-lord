@@ -236,6 +236,18 @@
                 };
                 return counting;
             }
+            async function bonusType(food, self){
+                let counting = 0;
+                for (element of adjacentSlots(self.y, self.x)){
+                    if (element.symbol[food]) {
+                        counting += 1;
+                        element.e.css("outline", "white 2px solid");
+                        await delay(500);
+                        element.e.css("outline", "none");
+                    }
+                };
+                return counting;
+            }
 
             function addSymbol(symbol){
                 let s = new SymbolInstance(symbol);
@@ -262,7 +274,7 @@
                     addSymbol(WAREHOUSE.NOTHING);
                 }
                 let doDestroy = 0;
-                if(symbolInstance.symbol.onDestroy) doDestroy = symbolInstance.symbol.onDestroy(symbolInstance)
+                if(symbolInstance.symbol.onDestroy) doDestroy = symbolInstance.symbol.onDestroy(symbolInstance) || 0
                 player.coins += doDestroy
                 return doDestroy
             }
@@ -367,7 +379,7 @@
 
                 BEER: new Symbol({name: "beer", rarity: 0, calculate: async(self)=>{
                     return 1;    
-                }}),
+                }, alch: 1}),
                 
                 BOUNTY_HUNTER: new Symbol({name: "bounty hunter", rarity: 0, calculate: async(self)=>{
                     let countingCoins = 1;
@@ -402,7 +414,7 @@
                     self.timer = self.timer - 1 || 21;
                     if(self.timer == 1){
                         destroySymbol(self);
-                        self.e.text("CRACK");
+                        self.e.text("SHINE");
                         self.e.css({"color":"red"});
                     }
                     return 0;   
@@ -459,9 +471,9 @@
                     
                     let countingCoins = 1;
                     for (element of adjacentSlots(self.y, self.x)){
-                        if (element.symbol.name == "beer") {
+                        if (element.symbol.alch) {
                             countingCoins += await element.calculate() * 10;
-                            element.e.text("beer");
+                            element.e.text("alch");
                             element.e.css("outline", "white 2px solid");
                             await delay(500);
                             element.e.text("");
@@ -502,12 +514,21 @@
                     let findBoxes = await eatType("box", self); 
                     if (findBoxes > 0){
                         destroySymbol(self);
+                        self.e.text("click!");
+                        self.e.css({"color":"red"}); 
                     }
                     return 1 + findBoxes;
                 }}),
 
                 LIGHT_BULB: new Symbol({name: "light bulb", rarity: 0, calculate: async(self)=>{
-                    return 1;    
+                    let result = await bonusType("rock", self);
+                    self.uses = self.user - 1 || 6;
+                    if(self.uses == 1){
+                        destroySymbol(self)
+                        self.e.text("flash!");
+                        self.e.css({"color":"red"}); 
+                    }
+                    return 1 + (result * 2);    
                 }}),
 
                 LOCKBOX: new Symbol({name: "lockbox", rarity: 0, calculate: async(self)=>{
@@ -540,6 +561,8 @@
 
                 ORE: new Symbol({name: "ore", rarity: 0, calculate: async(self)=>{
                     return 1;    
+                }, onDestroy: (self)=>{
+                    addSymbol(WAREHOUSE.SAPPHIRE);
                 }, ore:1}),
 
                 OWL: new Symbol({name: "owl", rarity: 0, calculate: async(self)=>{
@@ -551,7 +574,12 @@
                 }, bird: 1}),
 
                 OYSTER: new Symbol({name: "oyster", rarity: 0, calculate: async(self)=>{
-                    return 1;    
+                    if(_.random(0, 10) == 10){
+                        self.e.text((unu, l)=>{return l+"!"});
+                        addSymbol(WAREHOUSE.PEARL)
+                    }
+                    return 1;
+
                 }, aquatic:1}),
 
                 PEARL: new Symbol({name: "pearl", rarity: 0, calculate: async(self)=>{
@@ -563,7 +591,8 @@
                     if(self.timer == 1){
                         destroySymbol(self);
                         self.e.text("open");
-                        self.e.css({"color":"red"});                        return 10;
+                        self.e.css({"color":"red"});                        
+                        return 10;
                     }
                     return 0;    
                 }, babyLikes:1}),
@@ -619,7 +648,7 @@
 
                 URN: new Symbol({name: "urn", rarity: 0, calculate: async(self)=>{
                     return 1;    
-                }}),
+                }, urn: 1}),
 
                 BAR_OF_SOAP: new Symbol({name: "bar of soap", rarity: 1, calculate: async(self)=>{
                     self.timer = self.timer - 1 || 4;
@@ -631,7 +660,115 @@
                     }
                     return 1;    
                 }}),
-            };
+
+                BEAR: new Symbol({name: "bear", rarity: 1, calculate: async(self)=>{
+                    return 2;    
+                }}),
+
+                BIG_ORE: new Symbol({name: "big ore", rarity: 1, calculate: async(self)=>{
+                    return 2;    
+                }, onDestroy: (self)=>{
+                    addSymbol(WAREHOUSE.SAPPHIRE);
+                    addSymbol(WAREHOUSE.SAPPHIRE);
+                }, ore:2}),
+
+                BIG_URN: new Symbol({name: "big urn", rarity: 1, calculate: async(self)=>{
+                    return 2;    
+                }, urn:2}),
+
+                BILLIONAIRE: new Symbol({name: "billionaire", rarity: 1, calculate: async(self)=>{
+                    return 0;    
+                }}),
+
+                BRONZE_ARROW: new Symbol({name: "bronze arrow", rarity: 1, calculate: async(self)=>{
+                    return 0;  //placeholder   
+                }}),
+
+                FOUR_SIDED_DIE: new Symbol({name: "d4", rarity: 1, calculate: async(self)=>{
+                    let result = _.random(1,4);
+                    if(result == 1){
+                        for (var row of slots){
+                            let fR = _.filter(row, (value) => {
+                                return value.symbol.name == "gambler";
+                            });
+                            for (const element of Object.keys(fR)) {
+                                fR[element].e.text(fR[element].symbol.name);
+                                fR[element].e.css("outline", "white 2px solid");
+                                await delay(500);
+                                fR[element].e.text("+"+destroySymbol(fR[element]));
+                                await delay(500);
+                                fR[element].e.css("outline", "none");
+                                
+                            }
+                        }
+                    }
+                    return result;
+                }, dice: 2}),
+
+                GOLEM: new Symbol({name: "golem", rarity: 1, calculate: async(self)=>{
+                    self.timer = self.timer - 1 || 6;
+                    if(self.timer == 1){
+                        destroySymbol(self);
+                        _.times(5,()=>{addSymbol(WAREHOUSE.PEARL)});
+                        self.e.text("crumble");
+                        self.e.css({"color":"red"});
+                    }
+                    return 0;   
+                }}),
+
+                HOOLIGAN: new Symbol({name: "hooligan", rarity: 1, calculate: async (self)=>{
+                    
+                    let countingCoins = 1;
+                    countingCoins += 6 * await eatType("urn", self);
+
+                    return countingCoins;    
+                }, human:1}),
+
+                PINATA: new Symbol({name: "pinata", rarity: 1, calculate: async(self)=>{
+                    return 1;    
+                }, onDestroy: (self)=>{
+                    _.times(7, ()=>{addSymbol(WAREHOUSE.CANDY);}); 
+                }, babyLikes: 1,}),
+
+                SAFE: new Symbol({name: "safe", rarity: 1, calculate: async(self)=>{
+                    return 1;    
+                }, box: 30}),
+
+                SAPPHIRE: new Symbol({name: "sapphire", rarity: 1, calculate: async(self)=>{
+                    return 2;    
+                }, rock: 2}),
+
+                THIEF: new Symbol({name: "thief", rarity: 1, calculate: async(self)=>{
+                    self.savings = self.savings+4 || 1;
+                    return -1;    
+                }, onDestroy: (self)=>{
+                    return self.savings || 1;
+                },  human: 1}),
+
+                VOID_CREATURE: new Symbol({name: "void creature", rarity: 1, calculate: async(self)=>{
+                    let result = await bonus("nothing", self);
+                    if(self.uses == 0){
+                        destroySymbol(self)
+                        self.e.text("aah!");
+                        self.e.css({"color":"red"}); 
+                        return 8;
+                    }
+                    return 1 + (result * 2);    
+                }}),
+
+                WEALTHY_CAPSULE: new Symbol({name: "wealthy capsule", rarity: 1, calculate: async(self)=>{
+                    destroySymbol(self);
+                    self.e.text("coins!");
+                    self.e.css({"color":"red"});                        
+                    return 10;
+                }, babyLikes:1}),
+
+                WINE: new Symbol({name: "wine", rarity: 1, calculate: async(self)=>{
+                    return 2;    
+                }, alch: 2}),
+
+                
+            }; //End of WAREHOUSE (EOW)
 
             class SymbolInstance {
                 static allIds = 1;
@@ -655,8 +792,11 @@
                     setSlot(x, y, player.inventory[player.inventory.length - 1]);
                 });
                 // _.each(WAREHOUSE,(n)=>{addSymbol(n);});
-                addSymbol(WAREHOUSE.THREE_SIDED_DIE)
-                addSymbol(WAREHOUSE.GAMBLER);
+                setSlot(1,0,addSymbol(WAREHOUSE.CAT))
+                setSlot(2,1,addSymbol(WAREHOUSE.CHERRY));
+                setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
+                setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
+                setSlot(1,4,addSymbol(WAREHOUSE.COIN));
             }
             init();
             
@@ -665,7 +805,8 @@
                 player.spins -= 1;
                 player.coins -= 1;
                 if ( player.coins < 0 ){
-                    document.write("You don't have enough money to spin and you've been evicted!");
+                    alert("You don't have enough money to spin and you've been evicted!");
+                    return;
                 }
                 
                 player.status = STATES.spinning;
@@ -721,7 +862,7 @@
                     // alert(JSON.stringify(value));
                     if(value.rarity > -1){
                         names.push(key);
-                        weights.push(value.rarity+1);
+                        weights.push(5-value.rarity);
                     }
                 });
                 _.times(3, function(n) {
@@ -729,8 +870,8 @@
                     if(WAREHOUSE[result]){
                         options.push(result);
                     }
-                    // weights.splice(_.indexOf(names, result))
-                    // names.splice(_.indexOf(names, result))
+                    weights.splice(names.indexOf(result),1)
+                    names.splice(names.indexOf(result),1)
                 });
                 let choice = prompt(`1: ${WAREHOUSE[options[0]].name}\n2: ${WAREHOUSE[options[1]].name}\n3: ${WAREHOUSE[options[2]].name}\n4: skip`);
                 if(choice != 4){
