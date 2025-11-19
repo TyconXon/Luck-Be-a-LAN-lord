@@ -3,7 +3,9 @@
         <title>Luck be a Landlord</title>
 
         <script src="js/jquery.js"></script>
+        <script src="js/jquery-ui.js"></script>
         <script src="js/underscore.js"></script>
+		<!-- <link rel="stylesheet" href="https://raw.githubusercontent.com/jquery/jquery-ui/refs/heads/main/themes/base/all.css"/> -->
 
         <style>
             html{
@@ -32,9 +34,13 @@
                 /* text-overflow: clip; */
                 border: 2px black solid;
             }
-            .slot:hover{
-                outline: blue 2px solid;
-                cursor: help;
+            .slot *{
+                image-rendering: pixelated;
+                position: relative;
+                top: 50%;
+                transform: translateY(-50%); /* Moves the element up by half its own height */
+                width: 75%;
+                margin: auto;
             }
             button{
                 display:block;
@@ -47,6 +53,64 @@
                 text-align:center;
             }
 
+            .overhead{
+                width:20%;margin:auto;text-align:center;font-size: 30px;background-color:white;
+            }
+            #inv{
+                width:20%;margin:auto;text-align:center;
+            }
+
+            #satisfaction{
+                color: white;
+                transform-style: preserve-3d;
+                /* transition: top 0.1s, left 0.1s; */
+                /* padding: 5px; */
+                height: fit-content;
+                padding-top: 0px;
+                margin: auto;
+                font-size: 20px;
+                transform: rotate(calc(0deg - var(--degree) ));
+                text-align: center;
+                padding: 3px;
+                scale: calc(1 / var(--scale) );
+            }
+            #satisfactionWrapper{
+                background-color: var(--blue);
+                /* border: 3px solid white; */
+                position: absolute;
+                display: inline-block;
+                pointer-events: none;
+                z-index: 99999;
+                margin: none;
+                /* block-size: 5px; */
+                /* aspect-ratio: 1/1; */
+                padding: 5px;
+                scale: var(--scale);
+                
+                --degree : 0deg;
+                --scale : 2;
+                transform: rotate(var(--degree));
+
+                filter: drop-shadow(8px 8px 0px rgba(0,0,0,0.5));
+                
+            }
+
+            .softShake {
+                animation: softShake 0.5s ease;
+            }
+            @keyframes softShake {
+                0% { transform: translate(0.5px, -0.5px) rotate(0.1deg); }
+                30% { transform: translate(-0.5px, 0.5px) rotate(-0.1deg); }
+                60% { transform: translate(-0.5px, 0.5px) rotate(0.1deg); }
+                100% { transform: translate(0,0) rotate(0deg); } 
+
+                0%{
+                    scale: 0.99;
+                }
+                100%{
+                    scale: 1;
+                }
+            }
         </style>
 
         <script>
@@ -76,6 +140,12 @@
                 return result;
             }
 
+            function shake() {
+                $("html").removeClass("softShake");
+                document.querySelector("html").offsetHeight;
+                $("html").addClass("softShake");
+            }
+
             function loadLocalSprite(data) {
                 var spr = new Image();
                 spr.src = data;
@@ -90,6 +160,14 @@
             function playSound(snd) {
                 snd.currentTime = 0;
                 snd.play();
+            }
+
+            function getOffset(el) {
+                const rect = el.getBoundingClientRect();
+                return {
+                    left: rect.left + window.scrollX,
+                    top: rect.top + window.scrollY
+                };
             }
 
             //Values = String[], Weights = Int[];
@@ -115,6 +193,8 @@
                 return "never go here"
             }
 
+
+            
             // Version 4.0
             const pSBC = (p, c0, c1, l) => {
                 let r, g, b, P, f, t, h, i = parseInt, m = Math.round, a = typeof (c1) == "string";
@@ -154,15 +234,19 @@
         <script src="js/conzole.js"></script>
 
         <h1>Luck be a Landlord</h1>
-        <div style="width:50%;margin:auto;text-align:center;">
+        <div class="overhead">
             <span>Coins: <span id="coins">00</span></span>
             <br>
             <span><span id="time">?</span></span>
         </div>
+        <br>
         <div id="machine">
             
         </div>
         <button id="lever">SPIN</button>
+		<wrapper id="satisfactionWrapper"><p id="satisfaction">+2</p></wrapper>
+        <br>
+        <p id="inv">###</p>
 
         <script>
             const slots = [
@@ -171,13 +255,47 @@
                 [],
                 []
             ];
-            const rentSpins = [5,5,6,6,7,7,8,8,9,9,10,10,10]
-            const rentPrice = [25,50,100,150,225,300,350,425,575,625,675,777,1000]
+            const rentSpins = [5,5,6,6,7,7,8,8,9,9,10,10,10];
+            const rentPrice = [25,50,100,150,225,300,350,425,575,625,675,777,1000];
+            const descriptions = {
+                CAT: "$1, $9 for each milk it drinks",
+                ANCHOR: "$1, $4 if in corner",
+                BANANA: "$1, adds peel when destroyed",
+                BEE: "$1, +$1 on flower",
+                BOUNTY_HUNTER: "$1, destroys thiefs for $20",
+                BUBBLE: "$2, pops after 3 spins",
+                COAL: "$0, your christmas present",
+                CRAB: "$1, more for each other crab in row",
+                CROW: "$2, $-3 every 4 spins",
+                CULTIST: "$0 + number of cultists on board",
+                DOG: "$1, $2 if next to a human",
+                DWARF: "$1, drinks drunk give 10x value",
+                EGG: "$1 (WIP)",
+                GAMBLER: "$1, when destroyed: gives 2x times appeared on board",
+                GOLDFISH: "$1, pops bubbles for $15",
+                KEY: "$1, unlocks boxes then destroys itself",
+                LIGHT_BULB: "$1, +$value of rocks nearby. destroys itself after 5 shines",
+                LOCKBOX: "$1, contains $15 inside",
+                MAGPIE: "$-1, $9 every 4 spins",
+                MINER: "$1, destroys adjacent ores for $20",
+                MONKEY: "$1, eats bananas for $6 each",
+                ORE: "$1, contains a gem inside",
+                OWL: "$1, +$1 every 3 spins",
+                OYSTER: "$1, 20% to add a pearl",
+                PRESENT: "$0, contains 10. destroys after 12 spins",
+                SNAIL: "$0, $5 every 4 spins",
+                THREE_SIDED_DIE: "rolls between $1 and $3, destroys gamblers on $1",
+                TODDLER: "$1, gives +$6 for each present, candy, or pinata it destroys",
+                TURTLE: "$0, $4 every 3 spins",
+
+            };
+            const satisfyingWrapper = document.getElementById('satisfactionWrapper');
+            const satisfyingElement = document.getElementById('satisfaction');
 
             function setSlot(x,y,a){
                 a.e = $(`#s${x}x${y}y`)
-                a.e.text(a.symbol.name);
-                a.e.css({"background-color":a.symbol.name == "nothing"?"gray":"red", "color": "black"})
+                a.e.html(`<img src="assets/sprites/${a.symbol.name.replaceAll(" ","_")}.png">`);
+                a.e.css({"background-color":a.symbol.name == "empty"?"gray":"red", "color": "black"})
                 // console.log(x,y)
                 a.x = x;
                 a.y = y;
@@ -253,10 +371,10 @@
                 let s = new SymbolInstance(symbol);
                 player.inventory.push(s);
 
-                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "nothing"})
+                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
                 if (nonNothings.length < 20){
                     player.inventory.forEach((element)=>{
-                        if(element.symbol.name == "nothing" && player.inventory.length - nonNothings.length > 20 - nonNothings.length){
+                        if(element.symbol.name == "empty" && player.inventory.length - nonNothings.length > 20 - nonNothings.length){
                             player.inventory = _.without(player.inventory, element);
                         }
                     });
@@ -264,19 +382,33 @@
                 }else{
                     player.inventory = nonNothings;
                 }
+                updInventory()
                 return s;
             };
             function destroySymbol(symbolInstance){
                 player.inventory = _.without(player.inventory, symbolInstance);
 
-                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "nothing"})
+                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
                 if(nonNothings.length < 20){
-                    addSymbol(WAREHOUSE.NOTHING);
+                    addSymbol(WAREHOUSE.EMPTY);
                 }
                 let doDestroy = 0;
                 if(symbolInstance.symbol.onDestroy) doDestroy = symbolInstance.symbol.onDestroy(symbolInstance) || 0
                 player.coins += doDestroy
+                updInventory()
                 return doDestroy
+            }
+
+            function updInventory(){
+                let myInv = [];
+                let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
+                _.each(filterdInv, (value)=>{
+                    myInv.push(value.symbol.name)
+                });
+                $("#inv").html(`
+                    Symbols: ${filterdInv.length} <br> 
+                    ${myInv.join(", ")}
+                `);
             }
 
             const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6};
@@ -297,12 +429,13 @@
                     return target[prop];
                 },
                 set: function(target, prop, value) {
-                    console.log(`Setting property: ${prop} to ${value}`);
+                    // console.log(`Setting property: ${prop} to ${value}`);
                     switch (prop) {
                         case "coins":
                             target[prop] = value;
                             
                             $("#coins").text(target[prop])
+                            $("#coins").css("color", rentPrice[target["payments"]]>value?"crimson":"lime")
                             break;
                         case "status":
                             target[prop] = value;
@@ -343,11 +476,12 @@
 
             }
             const WAREHOUSE = {
-                NOTHING : new Symbol({name: "nothing", rarity: -1, skip:1, calculate: (self)=>{return 0;}}),
+                EMPTY : new Symbol({name: "empty", rarity: -1, skip:1, calculate: (self)=>{return 0;}}),
                 CAT: new Symbol({name: "cat", rarity: 0, calculate: async (self)=>{
                     
                     let countingCoins = 1;
                     countingCoins += 9 * await eat("milk", self);
+
 
                     return countingCoins;    
                 }}),
@@ -680,12 +814,12 @@
                     return 0;    
                 }}),
 
-                BRONZE_ARROW: new Symbol({name: "bronze arrow", rarity: 1, calculate: async(self)=>{
-                    return 0;  //placeholder   
-                }}),
+                // BRONZE_ARROW: new Symbol({name: "bronze arrow", rarity: 1, calculate: async(self)=>{
+                //     return 0;  //placeholder   
+                // }}),
 
-                FOUR_SIDED_DIE: new Symbol({name: "d4", rarity: 1, calculate: async(self)=>{
-                    let result = _.random(1,4);
+                FIVE_SIDED_DIE: new Symbol({name: "d5", rarity: 1, calculate: async(self)=>{
+                    let result = _.random(1,5);
                     if(result == 1){
                         for (var row of slots){
                             let fR = _.filter(row, (value) => {
@@ -746,8 +880,8 @@
                 },  human: 1}),
 
                 VOID_CREATURE: new Symbol({name: "void creature", rarity: 1, calculate: async(self)=>{
-                    let result = await bonus("nothing", self);
-                    if(self.uses == 0){
+                    let result = await bonus("empty", self);
+                    if(result == 0){
                         destroySymbol(self)
                         self.e.text("aah!");
                         self.e.css({"color":"red"}); 
@@ -756,7 +890,7 @@
                     return 1 + (result * 2);    
                 }}),
 
-                WEALTHY_CAPSULE: new Symbol({name: "wealthy capsule", rarity: 1, calculate: async(self)=>{
+                WEALTHY_CAPSULE: new Symbol({name: "lucky capsule", rarity: 1, calculate: async(self)=>{
                     destroySymbol(self);
                     self.e.text("coins!");
                     self.e.css({"color":"red"});                        
@@ -767,7 +901,7 @@
                     return 2;    
                 }, alch: 2}),
 
-                
+
             }; //End of WAREHOUSE (EOW)
 
             class SymbolInstance {
@@ -788,7 +922,7 @@
                     let y = n%5;
                     let currentSlot = $(`<div class="slot" id="s${x}x${y}y"></div>`);
                     $("#machine").append(currentSlot);
-                    addSymbol(WAREHOUSE.NOTHING);
+                    addSymbol(WAREHOUSE.EMPTY);
                     setSlot(x, y, player.inventory[player.inventory.length - 1]);
                 });
                 // _.each(WAREHOUSE,(n)=>{addSymbol(n);});
@@ -797,6 +931,8 @@
                 setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
                 setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
                 setSlot(1,4,addSymbol(WAREHOUSE.COIN));
+
+                satisfyingWrapper.style.display = 'none';
             }
             init();
             
@@ -818,6 +954,7 @@
                 });
 
                 player.status = STATES.counting;
+		        satisfyingWrapper.style.display = 'inline-block';
                 let predictedCoins = 0;
                 for (const rows of slots) {
                     for (const slot of rows) {
@@ -828,13 +965,16 @@
                             slot.e.css({"background-color":`rgb(0,${25*output},255)`});
                             await delay(100);
                             player.coins += output;
-                            slot.e.html((u,l)=>{return l+"<br>+"+output});
+                            // slot.e.html((u,l)=>{return l+"<br>+"+output});
+                            if(output > 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(0,255,${25*output},0.75)`);
+                            else if (output < 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(255,0, 0,0.75)`);
                             slot.e.css("outline","none");
                         }
                     }
                 }
-
+                
                 await delay(500);
+		        satisfyingWrapper.style.display = 'none';
                 if(player.spins == 0){
                     alert(`you must pay rent! it costs ${rentPrice[player.payments]} and you have ${player.coins}` )
                     player.coins -= rentPrice[player.payments];
@@ -873,8 +1013,8 @@
                     weights.splice(names.indexOf(result),1)
                     names.splice(names.indexOf(result),1)
                 });
-                let choice = prompt(`1: ${WAREHOUSE[options[0]].name}\n2: ${WAREHOUSE[options[1]].name}\n3: ${WAREHOUSE[options[2]].name}\n4: skip`);
-                if(choice != 4){
+                let choice = prompt(`1: ${WAREHOUSE[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${WAREHOUSE[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${WAREHOUSE[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip`);
+                if(choice != 4 && WAREHOUSE[options[choice-1]]){
                     addSymbol(WAREHOUSE[options[choice-1]]);
                 }
 
@@ -884,12 +1024,43 @@
                 player.status = STATES.idle;
             }
 
+            
+            async function satisfactionTextUpdate(text, element, color) {
+                try {
+                    satisfyingElement.innerText = text;
+                    satisfyingWrapper.style.backgroundColor = `${color}`;
+                    // console.log(JSON.stringify(element.style))
+                    let toLeft = getOffset(element).left + (Number(55) / 4)
+                    let toRight = getOffset(element).top + (Number(55) / 4)
+
+                    $(element).css({ scale: 1.25 });
+                    $(element).animate({ scale: 1 }, { duration: 250, queue: false });
+
+                    $(satisfyingWrapper).css({ left: toLeft + "px", top: toRight + "px", opacity: 0.1, apple: 0.1, "--scale": 0.1 });
+                    // satisfyingWrapper.style.setProperty("--degree", `${45 * Math.ceil(Math.random()*8)}deg`)
+                    $(satisfyingWrapper).animate({ opacity: 1, apple: 1 }, {
+                        duration: 400, step: () => {
+                            satisfyingWrapper.style.setProperty("--scale", satisfyingWrapper.style.opacity);
+                        }
+                    });
+
+                    // shake()
+
+                } catch (error) {
+                    //Ignoring errors for now, jokers error this seemingly randomly...
+                    console.log("STU " + error)
+                }
+
+            }
+
+           
 
             $('#lever').on("click", function () {
                 spin();
             });
             document.addEventListener("keydown", ev => {
                 if (ev.key == " "){
+                    ev.preventDefault();
                     spin();
                 }
             });
