@@ -295,7 +295,7 @@
             function setSlot(x,y,a){
                 a.e = $(`#s${x}x${y}y`)
                 a.e.html(`<img src="assets/sprites/${a.symbol.name.replaceAll(" ","_")}.png">`);
-                a.e.css({"background-color":a.symbol.name == "empty"?"gray":"red", "color": "black"})
+                a.e.css({"background-color":a.symbol.name == "empty"?"gray":"red", "opacity": "1.0"})
                 // console.log(x,y)
                 a.x = x;
                 a.y = y;
@@ -312,10 +312,10 @@
                 for (element of adjacentSlots(self.y, self.x)){
                     if (element.symbol.name == food) {
                         counting += 1;
-                        element.e.text(food);
+                        element.e.css("opacity", "1.0");
                         element.e.css("outline", "white 2px solid");
                         await delay(500);
-                        element.e.text("");
+                        element.e.css("opacity", "0.25");
                         await delay(500);
                         element.e.css("outline", "none");
                         destroySymbol(element)
@@ -329,10 +329,10 @@
                 for (element of adjacentSlots(self.y, self.x)){
                     if (element.symbol[type] > 0) {
                         counting += element.symbol[type];
-                        element.e.text(element.symbol.name);
+                        element.e.css("opacity", "1.0");
                         element.e.css("outline", "white 2px solid");
                         await delay(500);
-                        element.e.text("");
+                        element.e.css("opacity", "0.25");
                         await delay(500);
                         element.e.css("outline", "none");
                         destroySymbol(element)
@@ -340,7 +340,7 @@
                     }
                 };
                 return counting;
-            }
+            }  //TODO ww 
             async function bonus(food, self){
                 let counting = 0;
                 for (element of adjacentSlots(self.y, self.x)){
@@ -526,11 +526,10 @@
                     self.timer = self.timer - 1 || 4;
                     if(self.timer == 1){
                         destroySymbol(self);
-                        self.e.text("pop");
-                        self.e.css({"color":"red"});                    
+                        self.e.css("opacity", "0.25");                 
                     }
                     return 2;    
-                }}),
+                }, babyLikes: 1}),
 
                 CANDY: new Symbol({name: "candy", rarity: 0, calculate: async(self)=>{
                     return 1;    
@@ -548,8 +547,7 @@
                     self.timer = self.timer - 1 || 21;
                     if(self.timer == 1){
                         destroySymbol(self);
-                        self.e.text("SHINE");
-                        self.e.css({"color":"red"});
+                        self.e.css("opacity", "0.25");                 
                     }
                     return 0;   
                 }}),
@@ -607,10 +605,10 @@
                     for (element of adjacentSlots(self.y, self.x)){
                         if (element.symbol.alch) {
                             countingCoins += await element.calculate() * 10;
-                            element.e.text("alch");
+                            element.e.css("opacity", "1.0");                 
                             element.e.css("outline", "white 2px solid");
                             await delay(500);
-                            element.e.text("");
+                            element.e.css("opacity", "0.25");                 
                             await delay(500);
                             element.e.css("outline", "none");
                             destroySymbol(element)
@@ -648,7 +646,7 @@
                     let findBoxes = await eatType("box", self); 
                     if (findBoxes > 0){
                         destroySymbol(self);
-                        self.e.text("click!");
+                        self.e.css("opacity", "0.25");                 
                         self.e.css({"color":"red"}); 
                     }
                     return 1 + findBoxes;
@@ -659,8 +657,7 @@
                     self.uses = self.user - 1 || 6;
                     if(self.uses == 1){
                         destroySymbol(self)
-                        self.e.text("flash!");
-                        self.e.css({"color":"red"}); 
+                        self.e.css("opacity", "0.25"); 
                     }
                     return 1 + (result * 2);    
                 }}),
@@ -724,8 +721,7 @@
                     self.timer = self.timer - 1 || 13;
                     if(self.timer == 1){
                         destroySymbol(self);
-                        self.e.text("open");
-                        self.e.css({"color":"red"});                        
+                        self.e.css("opacity", "0.25");                 
                         return 10;
                     }
                     return 0;    
@@ -789,8 +785,7 @@
                     addSymbol(WAREHOUSE.BUBBLE);
                     if(self.timer == 1){
                         destroySymbol(self);
-                        self.e.text("slip");
-                        self.e.css({"color":"red"});
+                        self.e.css("opacity", "0.25");                 
                     }
                     return 1;    
                 }}),
@@ -826,7 +821,7 @@
                                 return value.symbol.name == "gambler";
                             });
                             for (const element of Object.keys(fR)) {
-                                fR[element].e.text(fR[element].symbol.name);
+                                fR[element].e.css("opacity", "1.0");
                                 fR[element].e.css("outline", "white 2px solid");
                                 await delay(500);
                                 fR[element].e.text("+"+destroySymbol(fR[element]));
@@ -844,8 +839,7 @@
                     if(self.timer == 1){
                         destroySymbol(self);
                         _.times(5,()=>{addSymbol(WAREHOUSE.PEARL)});
-                        self.e.text("crumble");
-                        self.e.css({"color":"red"});
+                        self.e.css("opacity", "0.25");
                     }
                     return 0;   
                 }}),
@@ -882,9 +876,8 @@
                 VOID_CREATURE: new Symbol({name: "void creature", rarity: 1, calculate: async(self)=>{
                     let result = await bonus("empty", self);
                     if(result == 0){
-                        destroySymbol(self)
-                        self.e.text("aah!");
-                        self.e.css({"color":"red"}); 
+                        destroySymbol(self);
+                        self.e.css("opacity", "0.25");
                         return 8;
                     }
                     return 1 + (result * 2);    
@@ -892,8 +885,7 @@
 
                 WEALTHY_CAPSULE: new Symbol({name: "lucky capsule", rarity: 1, calculate: async(self)=>{
                     destroySymbol(self);
-                    self.e.text("coins!");
-                    self.e.css({"color":"red"});                        
+                    self.e.css("opacity", "0.25");
                     return 10;
                 }, babyLikes:1}),
 
