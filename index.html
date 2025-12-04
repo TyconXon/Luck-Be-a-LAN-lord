@@ -57,7 +57,7 @@
                 width:20%;margin:auto;text-align:center;font-size: 30px;background-color:white;
             }
             #inv{
-                width:20%;margin:auto;text-align:center;
+                width: 80%;margin:auto;text-align:center;
             }
             #stats, #currencies{
                 width: 80%;margin:auto;text-align:center;
@@ -278,6 +278,493 @@
             const rentSpins = [5,5,6,6,7,7,8,8,9,9,10,10,10];
             const rentPrice = [25,50,100,150,225,300,350,425,575,625,675,777,1000];
             
+            
+            const satisfyingWrapper = document.getElementById('satisfactionWrapper');
+            const satisfyingElement = document.getElementById('satisfaction');
+
+            function setSlot(x,y,a){
+                a.e = $(`#s${x}x${y}y`)
+                a.e.html(`<img src="assets/sprites/${a.symbol.name.replaceAll(" ","_")}.png">`);
+                a.e.css({"background-color":a.symbol.name == "empty"?"gray":"red", "opacity": "1.0"})
+                // console.log(x,y)
+                a.x = x;
+                a.y = y;
+                slots[x][y] = a
+                return slots[x][y];
+            }
+            function adjacentSlots(x,y){
+                let adjacents = getAdjacent(slots,x,y,1);
+                return adjacents;           
+            }
+
+            async function eat(food, self){
+                let counting = 0;
+                for (element of adjacentSlots(self.y, self.x)){
+                    if (element.symbol.name == food) {
+                        counting += 1;
+                        element.e.css("opacity", "1.0");
+                        element.e.css("outline", "white 2px solid");
+                        await delay(500);
+                        element.e.css("opacity", "0.25");
+                        await delay(500);
+                        element.e.css("outline", "none");
+                        destroySymbol(element)
+
+                    }
+                };
+                return counting;
+            }
+            async function eatType(type, self){
+                let counting = 0;
+                for (element of adjacentSlots(self.y, self.x)){
+                    if (element.symbol[type] > 0) {
+                        counting += element.symbol[type];
+                        element.e.css("opacity", "1.0");
+                        element.e.css("outline", "white 2px solid");
+                        await delay(500);
+                        element.e.css("opacity", "0.25");
+                        await delay(500);
+                        element.e.css("outline", "none");
+                        destroySymbol(element)
+
+                    }
+                };
+                return counting;
+            }  //TODO ww 
+            async function bonus(food, self){
+                let counting = 0;
+                for (element of adjacentSlots(self.y, self.x)){
+                    if (element.symbol.name == food) {
+                        counting += 1;
+                        element.e.text(food);
+                        element.e.css("outline", "white 2px solid");
+                        await delay(500);
+                        element.e.css("outline", "none");
+                    }
+                };
+                return counting;
+            }
+            async function bonusType(food, self){
+                let counting = 0;
+                for (element of adjacentSlots(self.y, self.x)){
+                    if (element.symbol[food]) {
+                        counting += 1;
+                        element.e.css("outline", "white 2px solid");
+                        await delay(500);
+                        element.e.css("outline", "none");
+                    }
+                };
+                return counting;
+            }
+
+            function addSymbol(symbol){
+                let s = new SymbolInstance(symbol);
+                player.inventory.push(s);
+                for (const item of player.items) {
+                    item.calculate(item, "onAdded", symbol);
+                }
+
+                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
+                if (nonNothings.length < 20){
+                    player.inventory.forEach((element)=>{
+                        if(element.symbol.name == "empty" && player.inventory.length - nonNothings.length > 20 - nonNothings.length){
+                            player.inventory = _.without(player.inventory, element);
+                        }
+                    });
+                    // console.log(player.inventory.length - nonNothings.length, nonNothings.length)
+                }else{
+                    player.inventory = nonNothings;
+                }
+                updInventory()
+                return s;
+            };
+            function destroySymbol(symbolInstance){
+                player.inventory = _.without(player.inventory, symbolInstance);
+
+                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
+                if(nonNothings.length < 20){
+                    addSymbol(WAREHOUSE.EMPTY);
+                }
+                let doDestroy = 0;
+                if(symbolInstance.symbol.onDestroy) doDestroy = symbolInstance.symbol.onDestroy(symbolInstance) || 0
+                player.coins += doDestroy;
+                for (const item of player.items) {
+                    item.calculate(item, "onDestroy", doDestroy);
+                }
+                updInventory()
+                return doDestroy
+            }
+            function removeSymbol(symbolName){
+                try {
+                    player.inventory = _.without(player.inventory, player.inventory.filter((a)=>{return a.symbol.name == symbolName})[0] );
+                    let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
+                    if(nonNothings.length < 20){
+                        addSymbol(WAREHOUSE.EMPTY);
+                    }
+                    updInventory()
+                    player.removals--;
+                    return
+                } catch (error) {
+                    alert(`Failed to remove ${symbolName}! ${error}`);
+                }
+                
+            }
+            function addItem(item){
+                player.items.push(item);
+                for (const litem of player.items) {
+                    litem.calculate(item, "onAddedItem", item);
+                }
+                updInventory()
+                return item;
+            };
+
+            function updInventory(){
+                let myInv = [];
+                let myItems = [];
+                let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
+                _.each(filterdInv, (value)=>{
+                    myInv.push(value.symbol.name)
+                });
+                _.each(player.items, (value)=>{
+                    myItems.push(value.name)
+                });
+                $("#inv").html(`Items: ${myItems.join(", ")} <br>
+                    Symbols: ${filterdInv.length} <br> 
+                    ${myInv.join(", ")}
+                `);
+            }
+
+            const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6, "dead":-1};
+            
+
+            const _player = {
+                inventory : [],
+                items : [],
+
+                status : STATES.idle,
+
+                coins : 1,
+                rerolls : 0,
+                removals : 0,
+                tokens : 0,
+
+                payments : 0,
+                spins : rentSpins[0],
+                last: 0,
+                history: [],
+            }
+
+            const Playerhandler = {
+                get: function(target, prop) {
+                    // console.log(`Getting property: ${prop}`);
+                    return target[prop];
+                },
+                set: function(target, prop, value) {
+                    // console.log(`Setting property: ${prop} to ${value}`);
+                    switch (prop) {
+                        case "coins":
+                            target[prop] = value;
+                            
+                            $("#coins").text(target[prop])
+                            $("#percentage").text(`(${Rentercent(value)}%)`);
+                            $("#coins").css("color", rentPrice[target["payments"]]>value?`rgb(25,25,${(Rentercent(value)/100)*255})`:"lime")
+                            break;
+                        case "status":
+                            target[prop] = value;
+                            $("#lever").prop("disabled", value != STATES.idle);
+                            $("#remove").prop("disabled", value != STATES.idle || target["removals"] > 0);
+
+                            break;
+                        case "spins":
+                            target[prop] = Math.max(0,value);
+                            $("#time").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
+                            break;
+                        case "last":
+                            let last = target[prop];
+                            target[prop] = value;
+                            let avg = Math.floor(10*calculateAverage(target["history"]))/10;
+                            $("#stats").html(`↱${value} (${Rentercent(value)}%) | Δ${value-last} (${Math.floor(100*value/last)}%) | x̄${avg} (<ruby>${ Math.ceil(rentPrice[target["payments"]]/avg) } - ${Math.abs(target["spins"]-rentSpins[target["payments"]])}<rt>${Rentercent(avg)}%</rt></ruby>)`)
+                            $("#stats").css("color",value>last?"lime":value==last?"black":"crimson")
+                            break;
+                        case "rerolls":
+                        case "removals":
+                        case "tokens":
+                            target[prop] = value;
+                            $("#currencies").html(`⚄${target["rerolls"]} ⭙${target["removals"]} ℇ${target["tokens"]}`);
+                            $("#remove").prop("disabled", target["status"] != STATES.idle || target["removals"] > 0);
+                            break;
+                        default:
+                            target[prop] = value;
+                            break;
+                    }
+                    return true; // Indicate success
+                }
+            };
+
+            const player = new Proxy(_player, Playerhandler);
+            player.rerolls = 0;
+
+            
+            
+
+            class SymbolInstance {
+                static allIds = 1;
+                constructor(symbol) {
+                    this.symbol = symbol;
+                    this.id = SymbolInstance.allIds++;
+                }
+
+                async calculate() {
+                    let base = await this.symbol.calculate(this);
+                    let itemMod = 0;
+                    player.items.forEach(item => {
+                        itemMod += item.calculate(item, this, base);
+                    }); 
+                    return base+itemMod;
+                }
+            }
+
+            function init(){
+                _.times(20, (n)=>{
+                    let x = Math.floor(n/5);
+                    let y = n%5;
+                    let currentSlot = $(`<div class="slot" id="s${x}x${y}y"></div>`);
+                    $("#machine").append(currentSlot);
+                    addSymbol(WAREHOUSE.EMPTY);
+                    setSlot(x, y, player.inventory[player.inventory.length - 1]);
+                });
+                // _.each(WAREHOUSE,(n)=>{addSymbol(n);});
+                setSlot(1,0,addSymbol(WAREHOUSE.CAT))
+                setSlot(2,1,addSymbol(WAREHOUSE.CHERRY));
+                setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
+                setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
+                setSlot(1,4,addSymbol(WAREHOUSE.COIN));
+                // player.items.push(STOREROOM.BLACK_CAT);
+
+                satisfyingWrapper.style.display = 'none';
+            }
+            
+            async function spin(){
+                if (player.status != STATES.idle) return;
+                player.spins -= 1;
+                player.coins -= 1;
+                if ( player.coins < 0 ){
+                    alert("You don't have enough money to spin and you've been evicted!");
+                    return;
+                }
+                
+                player.status = STATES.spinning;
+                let modifiedInventory = player.inventory;
+                _.times(20, (n)=>{
+                    let chosen = _.sample(modifiedInventory);
+                    setSlot(Math.floor(n/5), n%5, chosen);
+                    modifiedInventory = _.without(modifiedInventory, chosen)
+                });
+
+
+                player.status = STATES.counting;
+                let predictedCoins = 0;
+                satisfyingWrapper.style.display = 'inline-block';
+
+                for (const item of player.items) {
+                    let itemMod = item.calculate(item, "beforeCount", predictedCoins);
+                    predictedCoins += itemMod;
+                    player.coins += itemMod;
+                    if(itemMod != 0) {
+                        await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#title")[0], `rgba(${itemMod*25},255,0,0.75)`);
+                        await delay(200);
+                    }
+                }
+
+                for (const rows of slots) {
+                    for (const slot of rows) {
+                        if (!slot.symbol.skip){
+                            await delay(200);
+                            slot.e.css({"background-color":"blue", "outline":"red 3px solid"});
+                            satisfyingWrapper.style.display = 'none';
+                            let output = await slot.calculate();
+                            slot.e.css({"background-color":`rgb(0,${25*output},255)`});
+                            // await delay(50);
+                            player.coins += output;
+                            predictedCoins += output; 
+                            // slot.e.html((u,l)=>{return l+"<br>+"+output});
+		                    satisfyingWrapper.style.display = 'inline-block';
+                            if(output > 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(${25*output},255,0,0.75)`);
+                            else if (output < 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(255,0, 0,0.75)`);
+                            await delay(200);
+                            slot.e.css("outline","none");
+                        }
+                    }
+                }
+                let oldPredicted = predictedCoins;
+                for (const item of player.items) {
+                    let itemMod = item.calculate(item, "onCount", oldPredicted);
+                    predictedCoins += itemMod;
+                    player.coins += itemMod;
+                    if(itemMod != 0) {
+                        await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#title")[0], `rgba(${25*itemMod},255,0,0.75)`);
+                        await delay(200);
+                    }
+                }
+                player.history.push(predictedCoins)
+                player.last = predictedCoins;
+
+                await delay(500);
+		        satisfyingWrapper.style.display = 'none';
+                if(player.spins == 0){
+                    alert(`you must pay rent! you have ${player.coins} (${Rentercent(player.coins)}) and it costs ${rentPrice[player.payments]}` )
+                    player.coins -= rentPrice[player.payments];
+                    if(player.coins < 0){
+                        document.write("You've failed to pay rent and you've been evicted!");
+                        return;
+                    }
+                    alert(`You paid rent!`)
+                    player.payments += 1;
+                    alert("You gained rerolls and removals!");
+                    player.rerolls += 2;
+                    player.removals += 2;
+                    giveItemOptions()
+                    // player.history = [];
+                    player.spins = rentSpins[player.payments]
+                    
+                }
+                giveOptions()
+
+            }
+
+            function giveOptions() {
+                player.status = STATES.choosing;
+                let names = [];
+                let weights = [];
+                let options = [];
+                try {
+                    
+                
+                _.each(WAREHOUSE, (value, key)=>{
+                    // alert(JSON.stringify(value));
+                    if(value.rarity > -1){
+                        names.push(key);
+                        weights.push(5-value.rarity);
+                    }
+                });
+                _.times(3, function(n) {
+                    let result = randomByWeight(names, weights);
+                    if(WAREHOUSE[result]){
+                        options.push(result);
+                    }
+                    weights.splice(names.indexOf(result),1)
+                    names.splice(names.indexOf(result),1)
+                });
+                let choice = prompt(`1: ${WAREHOUSE[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${WAREHOUSE[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${WAREHOUSE[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip\n${player.rerolls?"5: reroll":""} (${player.rerolls})`);
+                if(choice < 4 && WAREHOUSE[options[choice-1]]){
+                    addSymbol(WAREHOUSE[options[choice-1]]);
+                }else if(choice == 5 && player.rerolls != 0){
+                    player.rerolls--;
+                    giveOptions();
+                }
+                
+
+                } catch (error) {
+                    console.error(error);
+                }
+                player.status = STATES.idle;
+            }
+            function giveItemOptions() {
+                player.status = STATES.choosing;
+                // alert("apple")
+                let names = [];
+                let weights = [];
+                let options = [];
+                _.each(STOREROOM, (value, key)=>{
+                    // alert(JSON.stringify(value));
+                    if(value.rarity > -1){
+                        names.push(key);
+                        weights.push(5-value.rarity);
+                    }
+                });
+                _.times(3, function(n) {
+                    let result = randomByWeight(names, weights);
+                    if(STOREROOM[result]){
+                        options.push(result);
+                    }
+                    weights.splice(names.indexOf(result),1)
+                    names.splice(names.indexOf(result),1)
+                });
+                let choice = prompt(`Add an ITEM!:\n1: ${STOREROOM[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${STOREROOM[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${STOREROOM[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip`);
+                if(choice < 4 && STOREROOM[options[choice-1]]){
+                    addItem(STOREROOM[options[choice-1]]);
+                }
+                
+                player.status = STATES.idle;
+            }
+
+            
+            async function satisfactionTextUpdate(text, element, color) {
+                try {
+                    satisfyingElement.innerText = text;
+                    satisfyingWrapper.style.backgroundColor = `${color}`;
+                    // console.log(JSON.stringify(element.style))
+                    let toLeft = getOffset(element).left + (Number(55) / 4)
+                    let toRight = getOffset(element).top + (Number(55) / 4)
+
+                    $(element).css({ scale: 1.25 });
+                    $(element).animate({ scale: 1 }, { duration: 250, queue: false });
+
+                    $(satisfyingWrapper).css({ left: toLeft + "px", top: toRight + "px", opacity: 0.1, apple: 0.1, "--scale": 0.1 });
+                    // satisfyingWrapper.style.setProperty("--degree", `${45 * Math.ceil(Math.random()*8)}deg`)
+                    $(satisfyingWrapper).animate({ opacity: 1, apple: 1 }, {
+                        duration: 400, step: () => {
+                            satisfyingWrapper.style.setProperty("--scale", satisfyingWrapper.style.opacity);
+                        }
+                    });
+
+                    // shake()
+
+                } catch (error) {
+                    //Ignoring errors for now, jokers error this seemingly randomly...
+                    console.log("STU " + error)
+                }
+
+            }
+
+           
+
+            $('#lever').on("click", function () {
+                if ($("#lever")[0].disabled) return;
+                spin();
+            });
+            $("#stats").on("click", function () {
+                player.history = [];
+                alert("Average history cleared");
+            });
+            $("#remove").on("click", function (){
+                if ($("#remove")[0].disabled) return;
+                let myInv = [];
+                let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
+                _.each(filterdInv, (value)=>{
+                    myInv.push(value.symbol.name)
+                });
+                if (player.removals > 0){
+                    removeSymbol(prompt(myInv.join(", ")));
+                }else{
+                    alert("You have no removal tokens!")
+                }
+            });
+            document.addEventListener("keydown", ev => {
+                switch (ev.key)
+                {
+                    case " ":
+                        ev.preventDefault();
+                        spin();
+                        break;
+                    case "Backspace":
+                        $("#remove").click();
+                        break;
+                    case "=":
+                        $("#stats").click();
+                        break;
+                }
+            });
             //{
                 class Symbol {
                     static warehouse = [];
@@ -750,447 +1237,53 @@
 
 
                 }; 
+                const STOREROOM = {
+                    ANTHROPOLOGY_DEGREE: {name:"Anthropology Degree", rarity:3, calculate: (self,context,base)=>{
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol.human?1:0;
+                        }else { return 0; }
+                    }},
+                    BIRDHOUSE: {name:"Birdhouse", rarity:1, calculate: (self,context,base)=>{
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol.bird?1:0;
+                        }else { return 0; }
+                    }},
+                    BLACK_CAT: {name:"Black Cat",rarity:2, calculate: (self,context,base)=>{
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol.name == "cat"?1:0;
+                        }else if(context == "onCount"){
+                            return base%0==0?9:0;
+                        } else { return 0; }
+                    }},
+                    BLACK_PEPPER: {name:"Black Pepper",rarity:1, calculate: (self,context,base)=>{
+                        if(context == "onCount"){
+                            let old = self.count || 0;
+                            self.count = 0;
+                            return old;
+                        } else if(context == "onDestroy"){
+                            self.count = self.count+1 || 1;
+                            return 0;
+                        } else { return 0; }
+                    }},
+                    BROWN_PEPPER: {name:"Brown Pepper",rarity:1, calculate: (self,context,base)=>{
+                        if(context == "onCount"){
+                            let old = self.count || 0;
+                            self.count = 0;
+                            return old;
+                        } else if(context == "onAdded"){
+                            self.count = self.count+1 || 1;
+                            return 0;
+                        } else { return 0; }
+                    }},
+                    BOWLING_BALL: {name:"Bowling Ball",rarity:4, calculate: (self,context,base)=>{
+                        if(context == "onCount"){
+                            return 3;
+                        } else { return 0; }
+                    }},
+                };
             //}End of WAREHOUSE (EOW)
             
-            const satisfyingWrapper = document.getElementById('satisfactionWrapper');
-            const satisfyingElement = document.getElementById('satisfaction');
-
-            function setSlot(x,y,a){
-                a.e = $(`#s${x}x${y}y`)
-                a.e.html(`<img src="assets/sprites/${a.symbol.name.replaceAll(" ","_")}.png">`);
-                a.e.css({"background-color":a.symbol.name == "empty"?"gray":"red", "opacity": "1.0"})
-                // console.log(x,y)
-                a.x = x;
-                a.y = y;
-                slots[x][y] = a
-                return slots[x][y];
-            }
-            function adjacentSlots(x,y){
-                let adjacents = getAdjacent(slots,x,y,1);
-                return adjacents;           
-            }
-
-            async function eat(food, self){
-                let counting = 0;
-                for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol.name == food) {
-                        counting += 1;
-                        element.e.css("opacity", "1.0");
-                        element.e.css("outline", "white 2px solid");
-                        await delay(500);
-                        element.e.css("opacity", "0.25");
-                        await delay(500);
-                        element.e.css("outline", "none");
-                        destroySymbol(element)
-
-                    }
-                };
-                return counting;
-            }
-            async function eatType(type, self){
-                let counting = 0;
-                for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol[type] > 0) {
-                        counting += element.symbol[type];
-                        element.e.css("opacity", "1.0");
-                        element.e.css("outline", "white 2px solid");
-                        await delay(500);
-                        element.e.css("opacity", "0.25");
-                        await delay(500);
-                        element.e.css("outline", "none");
-                        destroySymbol(element)
-
-                    }
-                };
-                return counting;
-            }  //TODO ww 
-            async function bonus(food, self){
-                let counting = 0;
-                for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol.name == food) {
-                        counting += 1;
-                        element.e.text(food);
-                        element.e.css("outline", "white 2px solid");
-                        await delay(500);
-                        element.e.css("outline", "none");
-                    }
-                };
-                return counting;
-            }
-            async function bonusType(food, self){
-                let counting = 0;
-                for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol[food]) {
-                        counting += 1;
-                        element.e.css("outline", "white 2px solid");
-                        await delay(500);
-                        element.e.css("outline", "none");
-                    }
-                };
-                return counting;
-            }
-
-            function addSymbol(symbol){
-                let s = new SymbolInstance(symbol);
-                player.inventory.push(s);
-
-                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
-                if (nonNothings.length < 20){
-                    player.inventory.forEach((element)=>{
-                        if(element.symbol.name == "empty" && player.inventory.length - nonNothings.length > 20 - nonNothings.length){
-                            player.inventory = _.without(player.inventory, element);
-                        }
-                    });
-                    // console.log(player.inventory.length - nonNothings.length, nonNothings.length)
-                }else{
-                    player.inventory = nonNothings;
-                }
-                updInventory()
-                return s;
-            };
-            function destroySymbol(symbolInstance){
-                player.inventory = _.without(player.inventory, symbolInstance);
-
-                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
-                if(nonNothings.length < 20){
-                    addSymbol(WAREHOUSE.EMPTY);
-                }
-                let doDestroy = 0;
-                if(symbolInstance.symbol.onDestroy) doDestroy = symbolInstance.symbol.onDestroy(symbolInstance) || 0
-                player.coins += doDestroy
-                updInventory()
-                return doDestroy
-            }
-            function removeSymbol(symbolName){
-                try {
-                    player.inventory = _.without(player.inventory, player.inventory.filter((a)=>{return a.symbol.name == symbolName})[0] );
-                    let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
-                    if(nonNothings.length < 20){
-                        addSymbol(WAREHOUSE.EMPTY);
-                    }
-                    updInventory()
-                    player.removals--;
-                    return
-                } catch (error) {
-                    alert(`Failed to remove ${symbolName}! ${error}`);
-                }
-                
-            }
-
-            function updInventory(){
-                let myInv = [];
-                let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
-                _.each(filterdInv, (value)=>{
-                    myInv.push(value.symbol.name)
-                });
-                $("#inv").html(`
-                    Symbols: ${filterdInv.length} <br> 
-                    ${myInv.join(", ")}
-                `);
-            }
-
-            const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6, "dead":-1};
-            
-
-            const _player = {
-                inventory : [],
-                items : [{
-                    name:"Debug",
-                    calculate: function(self,context,givenCoins){
-                        // alert(arguments);
-                        return 1;
-                    }
-                }],
-
-                status : STATES.idle,
-
-                coins : 1,
-                rerolls : 0,
-                removals : 0,
-                tokens : 0,
-
-                payments : 0,
-                spins : rentSpins[0],
-                last: 0,
-                history: [],
-            }
-
-            const Playerhandler = {
-                get: function(target, prop) {
-                    // console.log(`Getting property: ${prop}`);
-                    return target[prop];
-                },
-                set: function(target, prop, value) {
-                    // console.log(`Setting property: ${prop} to ${value}`);
-                    switch (prop) {
-                        case "coins":
-                            target[prop] = value;
-                            
-                            $("#coins").text(target[prop])
-                            $("#percentage").text(`(${Rentercent(value)}%)`);
-                            $("#coins").css("color", rentPrice[target["payments"]]>value?`rgb(25,25,${(Rentercent(value)/100)*255})`:"lime")
-                            break;
-                        case "status":
-                            target[prop] = value;
-                            $("#lever").prop("disabled", value != STATES.idle);
-                            $("#remove").prop("disabled", value != STATES.idle || target["removals"] > 0);
-
-                            break;
-                        case "spins":
-                            target[prop] = Math.max(0,value);
-                            $("#time").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
-                            break;
-                        case "last":
-                            let last = target[prop];
-                            target[prop] = value;
-                            let avg = Math.floor(10*calculateAverage(target["history"]))/10;
-                            $("#stats").html(`↱${value} (${Rentercent(value)}%) | Δ${value-last} (${Math.floor(100*value/last)}%) | x̄${avg} (<ruby>${ Math.ceil(rentPrice[target["payments"]]/avg) } - ${Math.abs(target["spins"]-rentSpins[target["payments"]])}<rt>${Rentercent(avg)}%</rt></ruby>)`)
-                            $("#stats").css("color",value>last?"lime":value==last?"black":"crimson")
-                            break;
-                        case "rerolls":
-                        case "removals":
-                        case "tokens":
-                            target[prop] = value;
-                            $("#currencies").html(`⚄${target["rerolls"]} ⭙${target["removals"]} ℇ${target["tokens"]}`);
-                            $("#remove").prop("disabled", target["status"] != STATES.idle || target["removals"] > 0);
-                            break;
-                        default:
-                            target[prop] = value;
-                            break;
-                    }
-                    return true; // Indicate success
-                }
-            };
-
-            const player = new Proxy(_player, Playerhandler);
-            player.rerolls = 0;
-
-            
-            
-
-            class SymbolInstance {
-                static allIds = 1;
-                constructor(symbol) {
-                    this.symbol = symbol;
-                    this.id = SymbolInstance.allIds++;
-                }
-
-                async calculate() {
-                    let base = await this.symbol.calculate(this);
-                    let itemMod = 0;
-                    player.items.forEach(item => {
-                        itemMod += item.calculate(item, this, base);
-                    }); 
-                    return base+itemMod;
-                }
-            }
-
-            function init(){
-                _.times(20, (n)=>{
-                    let x = Math.floor(n/5);
-                    let y = n%5;
-                    let currentSlot = $(`<div class="slot" id="s${x}x${y}y"></div>`);
-                    $("#machine").append(currentSlot);
-                    addSymbol(WAREHOUSE.EMPTY);
-                    setSlot(x, y, player.inventory[player.inventory.length - 1]);
-                });
-                // _.each(WAREHOUSE,(n)=>{addSymbol(n);});
-                setSlot(1,0,addSymbol(WAREHOUSE.CAT))
-                setSlot(2,1,addSymbol(WAREHOUSE.CHERRY));
-                setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
-                setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
-                setSlot(1,4,addSymbol(WAREHOUSE.COIN));
-
-                satisfyingWrapper.style.display = 'none';
-            }
             init();
-            
-            async function spin(){
-                if (player.status != STATES.idle) return;
-                player.spins -= 1;
-                player.coins -= 1;
-                if ( player.coins < 0 ){
-                    alert("You don't have enough money to spin and you've been evicted!");
-                    return;
-                }
-                
-                player.status = STATES.spinning;
-                let modifiedInventory = player.inventory;
-                _.times(20, (n)=>{
-                    let chosen = _.sample(modifiedInventory);
-                    setSlot(Math.floor(n/5), n%5, chosen);
-                    modifiedInventory = _.without(modifiedInventory, chosen)
-                });
-
-
-                player.status = STATES.counting;
-                let predictedCoins = 0;
-                satisfyingWrapper.style.display = 'inline-block';
-
-                for (const item of player.items) {
-                    let itemMod = item.calculate(item, "beforeCount", predictedCoins);
-                    predictedCoins += itemMod;
-                    player.coins += itemMod;
-                    if(itemMod != 0) await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#title")[0], `rgba(${itemMod*25},255,0,0.75)`);
-                    await delay(200);
-                }
-
-                for (const rows of slots) {
-                    for (const slot of rows) {
-                        if (!slot.symbol.skip){
-                            await delay(200);
-                            slot.e.css({"background-color":"blue", "outline":"red 3px solid"});
-                            satisfyingWrapper.style.display = 'none';
-                            let output = await slot.calculate();
-                            slot.e.css({"background-color":`rgb(0,${25*output},255)`});
-                            // await delay(50);
-                            player.coins += output;
-                            predictedCoins += output; 
-                            // slot.e.html((u,l)=>{return l+"<br>+"+output});
-		                    satisfyingWrapper.style.display = 'inline-block';
-                            if(output > 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(${25*output},255,0,0.75)`);
-                            else if (output < 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(255,0, 0,0.75)`);
-                            await delay(200);
-                            slot.e.css("outline","none");
-                        }
-                    }
-                }
-                for (const item of player.items) {
-                    let itemMod = item.calculate(item, "onCount", predictedCoins);
-                    predictedCoins += itemMod;
-                    player.coins += itemMod;
-                    if(itemMod != 0) await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#title")[0], `rgba(${25*itemMod},255,0,0.75)`);
-                    await delay(200);
-                }
-                player.history.push(predictedCoins)
-                player.last = predictedCoins;
-
-                await delay(500);
-		        satisfyingWrapper.style.display = 'none';
-                if(player.spins == 0){
-                    alert(`you must pay rent! you have ${player.coins} (${Rentercent(player.coins)}) and it costs ${rentPrice[player.payments]}` )
-                    player.coins -= rentPrice[player.payments];
-                    if(player.coins < 0){
-                        document.write("You've failed to pay rent and you've been evicted!");
-                        return;
-                    }
-                    alert(`You paid rent!`)
-                    player.payments += 1;
-                    alert("You gained rerolls and removals!");
-                    player.rerolls += 2;
-                    player.removals += 2;
-                    // player.history = [];
-                    player.spins = rentSpins[player.payments]
-                }
-                giveOptions()
-
-            }
-
-            function giveOptions() {
-                player.status = STATES.choosing;
-                let names = [];
-                let weights = [];
-                let options = [];
-                try {
-                    
-                
-                _.each(WAREHOUSE, (value, key)=>{
-                    // alert(JSON.stringify(value));
-                    if(value.rarity > -1){
-                        names.push(key);
-                        weights.push(5-value.rarity);
-                    }
-                });
-                _.times(3, function(n) {
-                    let result = randomByWeight(names, weights);
-                    if(WAREHOUSE[result]){
-                        options.push(result);
-                    }
-                    weights.splice(names.indexOf(result),1)
-                    names.splice(names.indexOf(result),1)
-                });
-                let choice = prompt(`1: ${WAREHOUSE[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${WAREHOUSE[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${WAREHOUSE[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip\n${player.rerolls?"5: reroll":""} (${player.rerolls})`);
-                if(choice < 4 && WAREHOUSE[options[choice-1]]){
-                    addSymbol(WAREHOUSE[options[choice-1]]);
-                }else if(choice == 5 && player.rerolls != 0){
-                    player.rerolls--;
-                    giveOptions();
-                }
-                
-
-                } catch (error) {
-                    console.error(error);
-                }
-                player.status = STATES.idle;
-            }
-
-            
-            async function satisfactionTextUpdate(text, element, color) {
-                try {
-                    satisfyingElement.innerText = text;
-                    satisfyingWrapper.style.backgroundColor = `${color}`;
-                    // console.log(JSON.stringify(element.style))
-                    let toLeft = getOffset(element).left + (Number(55) / 4)
-                    let toRight = getOffset(element).top + (Number(55) / 4)
-
-                    $(element).css({ scale: 1.25 });
-                    $(element).animate({ scale: 1 }, { duration: 250, queue: false });
-
-                    $(satisfyingWrapper).css({ left: toLeft + "px", top: toRight + "px", opacity: 0.1, apple: 0.1, "--scale": 0.1 });
-                    // satisfyingWrapper.style.setProperty("--degree", `${45 * Math.ceil(Math.random()*8)}deg`)
-                    $(satisfyingWrapper).animate({ opacity: 1, apple: 1 }, {
-                        duration: 400, step: () => {
-                            satisfyingWrapper.style.setProperty("--scale", satisfyingWrapper.style.opacity);
-                        }
-                    });
-
-                    // shake()
-
-                } catch (error) {
-                    //Ignoring errors for now, jokers error this seemingly randomly...
-                    console.log("STU " + error)
-                }
-
-            }
-
-           
-
-            $('#lever').on("click", function () {
-                if ($("#lever")[0].disabled) return;
-                spin();
-            });
-            $("#stats").on("click", function () {
-                player.history = [];
-                alert("Average history cleared");
-            });
-            $("#remove").on("click", function (){
-                if ($("#remove")[0].disabled) return;
-                let myInv = [];
-                let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
-                _.each(filterdInv, (value)=>{
-                    myInv.push(value.symbol.name)
-                });
-                if (player.removals > 0){
-                    removeSymbol(prompt(myInv.join(", ")));
-                }else{
-                    alert("You have no removal tokens!")
-                }
-            });
-            document.addEventListener("keydown", ev => {
-                switch (ev.key)
-                {
-                    case " ":
-                        ev.preventDefault();
-                        spin();
-                        break;
-                    case "Backspace":
-                        $("#remove").click();
-                        break;
-                    case "=":
-                        $("#stats").click();
-                        break;
-                }
-            });
         </script>
     </body>
 </html>
