@@ -1030,6 +1030,7 @@
                 for (const item of player.items) {
                     let itemMod = item.calculate(item, "beforeCount", predictedCoins);
                     predictedCoins += itemMod;
+                    player.coins += itemMod;
                     if(itemMod != 0) await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#title")[0], `rgba(${itemMod*25},255,0,0.75)`);
                     await delay(200);
                 }
@@ -1057,6 +1058,7 @@
                 for (const item of player.items) {
                     let itemMod = item.calculate(item, "onCount", predictedCoins);
                     predictedCoins += itemMod;
+                    player.coins += itemMod;
                     if(itemMod != 0) await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#title")[0], `rgba(${25*itemMod},255,0,0.75)`);
                     await delay(200);
                 }
