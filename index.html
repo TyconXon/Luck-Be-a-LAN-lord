@@ -1,15 +1,20 @@
 <html>
     <head>
-        <title>Luck be a Landlord</title>
-
+        <title>Luck be a LANdlord</title>
+		<link rel="icon" href="assets/sprites/coin.png">
         <script src="js/jquery.js"></script>
         <script src="js/jquery-ui.js"></script>
         <script src="js/underscore.js"></script>
 		<!-- <link rel="stylesheet" href="https://raw.githubusercontent.com/jquery/jquery-ui/refs/heads/main/themes/base/all.css"/> -->
 
         <style>
+            @font-face {
+                font-family: 'sinsgold'; /* A name you choose for your font */
+                src: url('assets/fonts/SinsGold-MOD.ttf');
+            }
             html{
                 background-color: dimgray;
+                /* font-family: "sinsgold"; */
             }
 
             #machine{
@@ -251,7 +256,7 @@
     <body>
         <script src="js/myConsole.js"></script>
 
-        <h1 id="title">Luck be a Landlord</h1>
+        <h1 id="title">Luck be a LANdlord</h1>
         <div class="overhead">
             <span>Coins: <span id="coins">00</span> <span id="percentage">(%)</span></span>
             <br>
@@ -423,7 +428,7 @@
                 let myItems = [];
                 let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
                 _.each(filterdInv, (value)=>{
-                    myInv.push(value.symbol.name)
+                    myInv.push(`<img src="assets/sprites/${value.symbol.name.replaceAll(" ","_")}.png">`)
                 });
                 _.each(player.items, (value)=>{
                     myItems.push(value.name)
