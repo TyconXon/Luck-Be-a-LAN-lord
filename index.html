@@ -56,8 +56,11 @@
             .overhead{
                 width:20%;margin:auto;text-align:center;font-size: 30px;background-color:white;
             }
-            #inv{
+            #inv, #stats{
                 width:20%;margin:auto;text-align:center;
+            }
+            #percentage{
+                font-size: 50%;
             }
 
             #satisfaction{
@@ -170,6 +173,14 @@
                 };
             }
 
+            function calculateAverage(arr) {
+                if (arr.length === 0) {
+                    return 0; // Handle empty array case to avoid division by zero
+                }
+                const sum = arr.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+                return sum / arr.length;
+            }
+
             //Values = String[], Weights = Int[];
             function randomByWeight(values, weights) {
                 let total = 0
@@ -226,6 +237,10 @@
                 return new Promise(resolve => setTimeout(resolve, delayInms));
             };
 
+            function Rentercent(value){
+                return Math.floor(100*(value/rentPrice[player["payments"]]))
+            }
+
         </script>
 
         
@@ -235,7 +250,7 @@
 
         <h1>Luck be a Landlord</h1>
         <div class="overhead">
-            <span>Coins: <span id="coins">00</span></span>
+            <span>Coins: <span id="coins">00</span> <span id="percentage">(%)</span></span>
             <br>
             <span><span id="time">?</span></span>
         </div>
@@ -246,6 +261,7 @@
         <button id="lever">SPIN</button>
 		<wrapper id="satisfactionWrapper"><p id="satisfaction">+2</p></wrapper>
         <br>
+        <p id="stats">%%%</p>
         <p id="inv">###</p>
 
         <script>
@@ -420,7 +436,8 @@
                 coins : 1,
                 payments : 0,
                 spins : rentSpins[0],
-                
+                last: 0,
+                history: [],
             }
 
             const Playerhandler = {
@@ -435,7 +452,8 @@
                             target[prop] = value;
                             
                             $("#coins").text(target[prop])
-                            $("#coins").css("color", rentPrice[target["payments"]]>value?"crimson":"lime")
+                            $("#percentage").text(`(${Rentercent(value)}%)`);
+                            $("#coins").css("color", rentPrice[target["payments"]]>value?`rgb(25,25,${(Rentercent(value)/100)*255})`:"lime")
                             break;
                         case "status":
                             target[prop] = value;
@@ -444,6 +462,13 @@
                         case "spins":
                             target[prop] = Math.max(0,value);
                             $("#time").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
+                            break;
+                        case "last":
+                            let last = target[prop];
+                            target[prop] = value;
+                            let avg = Math.floor(10*calculateAverage(target["history"]))/10;
+                            $("#stats").text(`↱${value} (${Rentercent(value)}%) | Δ${value-last} (${Math.floor(100*value/last)}%) | x̄${avg} (${Rentercent(avg)}%)`)
+                            $("#stats").css("color",value>last?"lime":value==last?"black":"crimson")
                             break;
                         default:
                             target[prop] = value;
@@ -838,7 +863,7 @@
                     self.timer = self.timer - 1 || 6;
                     if(self.timer == 1){
                         destroySymbol(self);
-                        _.times(5,()=>{addSymbol(WAREHOUSE.PEARL)});
+                        _.times(5,()=>{addSymbol(WAREHOUSE.ORE)});
                         self.e.css("opacity", "0.25");
                     }
                     return 0;   
@@ -946,25 +971,30 @@
                 });
 
                 player.status = STATES.counting;
-		        satisfyingWrapper.style.display = 'inline-block';
                 let predictedCoins = 0;
                 for (const rows of slots) {
                     for (const slot of rows) {
                         if (!slot.symbol.skip){
                             await delay(200);
                             slot.e.css({"background-color":"blue", "outline":"red 3px solid"});
+                            satisfyingWrapper.style.display = 'none';
                             let output = await slot.calculate();
                             slot.e.css({"background-color":`rgb(0,${25*output},255)`});
-                            await delay(100);
+                            // await delay(50);
                             player.coins += output;
+                            predictedCoins += output; 
                             // slot.e.html((u,l)=>{return l+"<br>+"+output});
-                            if(output > 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(0,255,${25*output},0.75)`);
+		                    satisfyingWrapper.style.display = 'inline-block';
+                            if(output > 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(${25*output},255,0,0.75)`);
                             else if (output < 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(255,0, 0,0.75)`);
+                            await delay(200);
                             slot.e.css("outline","none");
                         }
                     }
                 }
-                
+                player.history.push(predictedCoins)
+                player.last = predictedCoins;
+
                 await delay(500);
 		        satisfyingWrapper.style.display = 'none';
                 if(player.spins == 0){
