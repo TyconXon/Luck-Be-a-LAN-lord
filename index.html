@@ -56,8 +56,11 @@
             .overhead{
                 width:20%;margin:auto;text-align:center;font-size: 30px;background-color:white;
             }
-            #inv, #stats{
+            #inv{
                 width:20%;margin:auto;text-align:center;
+            }
+            #stats, #currencies{
+                width: 80%;margin:auto;text-align:center;
             }
             #percentage{
                 font-size: 50%;
@@ -262,8 +265,9 @@
 		<wrapper id="satisfactionWrapper"><p id="satisfaction">+2</p></wrapper>
         <br>
         <p id="stats">%%%</p>
+        <p id="currencies">###</p>
         <p id="inv">###</p>
-
+        <button id="remove">Remove a symbol</button>
         <script>
             const slots = [
                 [],
@@ -414,6 +418,21 @@
                 updInventory()
                 return doDestroy
             }
+            function removeSymbol(symbolName){
+                try {
+                    player.inventory = _.without(player.inventory, player.inventory.filter((a)=>{return a.symbol.name == symbolName})[0] );
+                    let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
+                    if(nonNothings.length < 20){
+                        addSymbol(WAREHOUSE.EMPTY);
+                    }
+                    updInventory()
+                    player.removals--;
+                    return
+                } catch (error) {
+                    alert(`Failed to remove ${symbolName}! ${error}`);
+                }
+                
+            }
 
             function updInventory(){
                 let myInv = [];
@@ -427,13 +446,20 @@
                 `);
             }
 
-            const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6};
+            const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6, "dead":-1};
             
 
             const _player = {
                 inventory : [],
+                items : [],
+
                 status : STATES.idle,
+
                 coins : 1,
+                rerolls : 0,
+                removals : 0,
+                tokens : 0,
+
                 payments : 0,
                 spins : rentSpins[0],
                 last: 0,
@@ -457,7 +483,9 @@
                             break;
                         case "status":
                             target[prop] = value;
-                            $("#lever").prop("disabled", value != STATES.idle)
+                            $("#lever").prop("disabled", value != STATES.idle);
+                            $("#remove").prop("disabled", value != STATES.idle || target["removals"] > 0);
+
                             break;
                         case "spins":
                             target[prop] = Math.max(0,value);
@@ -467,8 +495,15 @@
                             let last = target[prop];
                             target[prop] = value;
                             let avg = Math.floor(10*calculateAverage(target["history"]))/10;
-                            $("#stats").text(`↱${value} (${Rentercent(value)}%) | Δ${value-last} (${Math.floor(100*value/last)}%) | x̄${avg} (${Rentercent(avg)}%)`)
+                            $("#stats").html(`↱${value} (${Rentercent(value)}%) | Δ${value-last} (${Math.floor(100*value/last)}%) | x̄${avg} (<ruby>${ Math.ceil(rentPrice[target["payments"]]/avg) } - ${Math.abs(target["spins"]-rentSpins[target["payments"]])}<rt>${Rentercent(avg)}%</rt></ruby>)`)
                             $("#stats").css("color",value>last?"lime":value==last?"black":"crimson")
+                            break;
+                        case "rerolls":
+                        case "removals":
+                        case "tokens":
+                            target[prop] = value;
+                            $("#currencies").html(`⚄${target["rerolls"]} ⭙${target["removals"]} ℇ${target["tokens"]}`);
+                            $("#remove").prop("disabled", target["status"] != STATES.idle || target["removals"] > 0);
                             break;
                         default:
                             target[prop] = value;
@@ -479,7 +514,7 @@
             };
 
             const player = new Proxy(_player, Playerhandler);
-            
+            player.rerolls = 0;
 
             class Symbol {
                 static warehouse = [];
@@ -998,7 +1033,7 @@
                 await delay(500);
 		        satisfyingWrapper.style.display = 'none';
                 if(player.spins == 0){
-                    alert(`you must pay rent! it costs ${rentPrice[player.payments]} and you have ${player.coins}` )
+                    alert(`you must pay rent! you have ${player.coins} (${Rentercent(player.coins)}) and it costs ${rentPrice[player.payments]}` )
                     player.coins -= rentPrice[player.payments];
                     if(player.coins < 0){
                         document.write("You've failed to pay rent and you've been evicted!");
@@ -1006,6 +1041,10 @@
                     }
                     alert(`You paid rent!`)
                     player.payments += 1;
+                    alert("You gained rerolls and removals!");
+                    player.rerolls += 2;
+                    player.removals += 2;
+                    // player.history = [];
                     player.spins = rentSpins[player.payments]
                 }
                 giveOptions()
@@ -1035,10 +1074,14 @@
                     weights.splice(names.indexOf(result),1)
                     names.splice(names.indexOf(result),1)
                 });
-                let choice = prompt(`1: ${WAREHOUSE[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${WAREHOUSE[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${WAREHOUSE[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip`);
-                if(choice != 4 && WAREHOUSE[options[choice-1]]){
+                let choice = prompt(`1: ${WAREHOUSE[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${WAREHOUSE[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${WAREHOUSE[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip\n${player.rerolls?"5: reroll":""} (${player.rerolls})`);
+                if(choice < 4 && WAREHOUSE[options[choice-1]]){
                     addSymbol(WAREHOUSE[options[choice-1]]);
+                }else if(choice == 5 && player.rerolls != 0){
+                    player.rerolls--;
+                    giveOptions();
                 }
+                
 
                 } catch (error) {
                     console.error(error);
@@ -1078,12 +1121,39 @@
            
 
             $('#lever').on("click", function () {
+                if ($("#lever")[0].disabled) return;
                 spin();
             });
+            $("#stats").on("click", function () {
+                player.history = [];
+                alert("Average history cleared");
+            });
+            $("#remove").on("click", function (){
+                if ($("#remove")[0].disabled) return;
+                let myInv = [];
+                let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
+                _.each(filterdInv, (value)=>{
+                    myInv.push(value.symbol.name)
+                });
+                if (player.removals > 0){
+                    removeSymbol(prompt(myInv.join(", ")));
+                }else{
+                    alert("You have no removal tokens!")
+                }
+            });
             document.addEventListener("keydown", ev => {
-                if (ev.key == " "){
-                    ev.preventDefault();
-                    spin();
+                switch (ev.key)
+                {
+                    case " ":
+                        ev.preventDefault();
+                        spin();
+                        break;
+                    case "Backspace":
+                        $("#remove").click();
+                        break;
+                    case "=":
+                        $("#stats").click();
+                        break;
                 }
             });
         </script>
