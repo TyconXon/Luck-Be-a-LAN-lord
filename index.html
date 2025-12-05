@@ -15,6 +15,9 @@
             html{
                 background-color: dimgray;
                 /* font-family: "sinsgold"; */
+                -webkit-text-stroke: 0.2em rgba(0,0,0,1);
+                paint-order: stroke fill;
+                color:white;
             }
 
             #machine{
@@ -52,7 +55,8 @@
                 width: 300px;
                 margin: auto;
                 margin-top: 1%;
-
+                color:white;
+                -webkit-text-stroke: 0.15em rgba(0,0,0,1);
             }
             h1{
                 text-align:center;
@@ -122,6 +126,89 @@
                     scale: 1;
                 }
             }
+
+            #mailInterface {
+                width: 50%;
+                height: 75%;
+                margin: auto;
+                background: navy; 
+                filter: drop-shadow(8px 8px 0px rgba(0,0,0,0.5));
+
+            }
+            #mailInterface h2{
+                background-color: dimgray;
+                margin-top: 0px;
+                margin-bottom:5px;
+                text-align:center;
+                color:lightgrey;  
+                filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.5));
+
+            }
+            #mailInterface button{
+                width:15%;
+                /* height:25px; */
+                color:white; border:solid 3px black;
+                font-size: 100%;
+                cursor: hand;
+                box-shadow: 3px 3px 0px black;
+                display: inline-block;
+                float:right;
+                margin:5px;
+            }
+            #skipButton{
+                background-color:orange;
+            }
+            #rerollButton{
+                background-color:green;
+            }
+            #mailInterface button:hover{
+                outline: 3px white solid;
+            }
+            #mailInterface button:active, .symbolGetButton:active{
+                border-color:white;
+                -webkit-text-stroke: 0.15em rgba(0,0,0,0);
+                background-color: rgba(255,255,255,0.5);
+            }
+
+            #symbolChoiceContainer {
+                width: 100%;
+                display: flex;
+                flex-direction: row;
+                gap: 5px;
+                margin-top: 10px;
+            }
+            .symbolGetButton {
+                flex-grow: 1;
+                border: black 2px solid;
+                color: white;
+                text-align:center;
+                padding:1%;
+                /* text-shadow: 1px 1px 0px black, 1px -1px 0px black, -1px -1px 0px black, -1px 1px 0px black; */
+                filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.5));
+                transition: all 0.1s;
+                width:0; /*Fixes the width */
+            }
+            .symbolGetButton:hover{
+                outline: white 3px solid;
+                cursor: hand;
+                /* -webkit-text-stroke: 0.15em rgba(0,0,0,0); */
+            }
+            button:disabled{
+                text-decoration: line-through;
+                opacity:0.5;
+            }
+
+            .symbolGetButton img {
+                width: 40%;
+                margin: auto;
+                aspect-ratio: 1/1;
+                image-rendering: pixelated;
+                /* border: 2.5px black solid; */
+                /* padding: 5px; */
+            }
+            .symbolName{
+                font-size:25px;
+            }
         </style>
 
         <script>
@@ -172,6 +259,12 @@
                 snd.currentTime = 0;
                 snd.play();
             }
+            function pretty(str) {
+                if (typeof str !== 'string' || str.length === 0) {
+                    return str; // Handle empty or non-string inputs
+                }
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
 
             function getOffset(el) {
                 const rect = el.getBoundingClientRect();
@@ -180,6 +273,21 @@
                     top: rect.top + window.scrollY
                 };
             }
+
+            // Source - https://stackoverflow.com/a
+            // Posted by KevynTD, modified by community. See post 'Timeline' for change history
+            // Retrieved 2025-12-05, License - CC BY-SA 4.0
+
+            function waitListener(element, listenerName) {
+                return new Promise(function (resolve, reject) {
+                    var listener = event => {
+                        element.removeEventListener(listenerName, listener);
+                        resolve(event);
+                    };
+                    element.addEventListener(listenerName, listener);
+                });
+            }
+
 
             function calculateAverage(arr) {
                 if (arr.length === 0) {
@@ -241,6 +349,35 @@
                 else return "#" + (4294967296 + r * 16777216 + g * 65536 + b * 256 + (f ? m(a * 255) : 0)).toString(16).slice(1, f ? undefined : -2)
             }
 
+            async function satisfactionTextUpdate(text, element, color) {
+                try {
+                    satisfyingElement.innerText = text;
+                    satisfyingWrapper.style.backgroundColor = `${color}`;
+                    // console.log(JSON.stringify(element.style))
+                    let toLeft = getOffset(element).left + (Number(55) / 4)
+                    let toRight = getOffset(element).top + (Number(55) / 4)
+
+                    $(element).css({ scale: 1.25 });
+                    $(element).animate({ scale: 1 }, { duration: 250, queue: false });
+
+                    $(satisfyingWrapper).css({ left: toLeft + "px", top: toRight + "px", opacity: 0.1, apple: 0.1, "--scale": 0.1 });
+                    // satisfyingWrapper.style.setProperty("--degree", `${45 * Math.ceil(Math.random()*8)}deg`)
+                    $(satisfyingWrapper).animate({ opacity: 1, apple: 1 }, {
+                        duration: 400, step: () => {
+                            satisfyingWrapper.style.setProperty("--scale", satisfyingWrapper.style.opacity);
+                        }
+                    });
+
+                    // shake()
+
+                } catch (error) {
+                    //Ignoring errors for now, jokers error this seemingly randomly...
+                    console.log("STU " + error)
+                }
+
+            }
+
+
             const delay = (delayInms) => {
                 return new Promise(resolve => setTimeout(resolve, delayInms));
             };
@@ -273,6 +410,43 @@
         <p id="currencies">###</p>
         <p id="inv">###</p>
         <button id="remove">Remove a symbol</button>
+<!--  -->
+        <div popover="manual" id="mailInterface" open>
+            <h2 id="reminder">25 due in 2 spins </h2>
+            <h2 id="mailTitle">Add a symbol!</h2>
+            <div id="skipContainer">
+                <span style="color:white">Payments: 0/12</span>
+                <button id="skipButton">Skip</button>
+                <button id="rerollButton">Reroll (2)</button>
+            </div>
+            <div id="symbolChoiceContainer">
+                <div class="symbolGetButton" id="symbolGetButton1">
+                    <div>
+                        <p class="symbolName">Crow</p>
+                        <img src="assets/sprites/crow.png">
+                        <p class="symbolRarity">Common</p>
+                    </div>
+                </div>
+                <div class="symbolGetButton" id="symbolGetButton2">
+                    <div>
+                        <p class="symbolName">Apple</p>
+                        <img src="assets/sprites/apple.png">
+                        <p class="symbolRarity">Rare</p>
+                    </div>
+                </div>
+                <div class="symbolGetButton" id="symbolGetButton3">
+                    <div>
+                        <p class="symbolName">Big Ore</p>
+                        <img src="assets/sprites/big_ore.png">
+                        <p class="symbolRarity">Uncommon</p>
+                    </div>
+                </div>
+                
+                <!-- generate other items under here -->
+            </div>
+        </div >
+<!--  -->
+
         <script>
             const slots = [
                 [],
@@ -280,13 +454,16 @@
                 [],
                 []
             ];
+            
             const rentSpins = [5,5,6,6,7,7,8,8,9,9,10,10,10];
             const rentPrice = [25,50,100,150,225,300,350,425,575,625,675,777,1000];
-            
             
             const satisfyingWrapper = document.getElementById('satisfactionWrapper');
             const satisfyingElement = document.getElementById('satisfaction');
 
+            function imgify(name){
+                return `assets/sprites/${name.replaceAll(" ","_")}.png`
+            }
             function setSlot(x,y,a){
                 a.e = $(`#s${x}x${y}y`)
                 a.e.html(`<img src="assets/sprites/${a.symbol.name.replaceAll(" ","_")}.png">`);
@@ -483,13 +660,14 @@
                         case "spins":
                             target[prop] = Math.max(0,value);
                             $("#time").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
+                            $("#reminder").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
                             break;
                         case "last":
                             let last = target[prop];
                             target[prop] = value;
                             let avg = Math.floor(10*calculateAverage(target["history"]))/10;
                             $("#stats").html(`↱${value} (${Rentercent(value)}%) | Δ${value-last} (${Math.floor(100*value/last)}%) | x̄${avg} (<ruby>${ Math.ceil(rentPrice[target["payments"]]/avg) } - ${Math.abs(target["spins"]-rentSpins[target["payments"]])}<rt>${Rentercent(avg)}%</rt></ruby>)`)
-                            $("#stats").css("color",value>last?"lime":value==last?"black":"crimson")
+                            $("#stats").css("color",value>last?"lime":value==last?"white":"crimson")
                             break;
                         case "rerolls":
                         case "removals":
@@ -632,59 +810,111 @@
                     // player.history = [];
                     player.spins = rentSpins[player.payments]
                     
+                }else{
+                    giveOptions()
                 }
-                giveOptions()
 
             }
+            
+            function toRarity(a){
+                switch (a) {
+                    case 0:
+                        return "Common"
+                        break;
+                    case 1:
+                        return "Uncommon"
+                        break;
+                    case 2:
+                        return "Rare"
+                        break;
+                    case 3:
+                        return "Very Rare"
+                        break;
+                    default:
+                        return "Special"
+                        break;
+                }
+            }
+            function RarityToWeight(a){
+                switch (a) {
+                    case 0:
+                        return 50
+                        break;
+                    case 1:
+                        return 10
+                        break;
+                    case 2:
+                        return 3
+                        break;
+                    case 3:
+                        return 1
+                        break;
+                    default:
+                        return 0
+                        break;
+                }
+            }
 
-            function giveOptions() {
+            var names = [];
+            var weights = [];
+            var options = [];
+            var rarity = 0;
+            var choosingItems = false;
+
+            function giveOptions(rrarity = 0) {
                 player.status = STATES.choosing;
-                let names = [];
-                let weights = [];
-                let options = [];
-                try {
-                    
-                
-                _.each(WAREHOUSE, (value, key)=>{
-                    // alert(JSON.stringify(value));
-                    if(value.rarity > -1){
-                        names.push(key);
-                        weights.push(5-value.rarity);
-                    }
-                });
-                _.times(3, function(n) {
-                    let result = randomByWeight(names, weights);
-                    if(WAREHOUSE[result]){
-                        options.push(result);
-                    }
-                    weights.splice(names.indexOf(result),1)
-                    names.splice(names.indexOf(result),1)
-                });
-                let choice = prompt(`1: ${WAREHOUSE[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${WAREHOUSE[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${WAREHOUSE[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip\n${player.rerolls?"5: reroll":""} (${player.rerolls})`);
-                if(choice < 4 && WAREHOUSE[options[choice-1]]){
-                    addSymbol(WAREHOUSE[options[choice-1]]);
-                }else if(choice == 5 && player.rerolls != 0){
-                    player.rerolls--;
-                    giveOptions();
-                }
-                
+                 choosingItems = false;
+                 names = [];
+                 weights = [];
+                 options = [];
+                 rarity = rrarity
 
-                } catch (error) {
-                    console.error(error);
-                }
-                player.status = STATES.idle;
+                    _.each(WAREHOUSE, (value, key)=>{
+                        // alert(JSON.stringify(value));
+                        if(value.rarity > -1 && ( rarity == 0 || (rarity != 0 && value.rarity == rarity))){
+                            names.push(key);
+                            weights.push(RarityToWeight(value.rarity));
+                        }
+                    });
+                    _.times(3, function(n) {
+                        let result = randomByWeight(names, weights);
+                        if(WAREHOUSE[result]){
+                            options.push(result);
+                        }
+                        weights.splice(names.indexOf(result),1)
+                        names.splice(names.indexOf(result),1)
+                    });
+                    // let choice = prompt(`1: ${WAREHOUSE[options[0]].name}\n2: ${WAREHOUSE[options[1]].name} \n3: ${WAREHOUSE[options[2]].name} \n4: skip\n${player.rerolls?"5: reroll":""} (${player.rerolls})`);
+                    $("#mailTitle").text("Choose a SYMBOL!");
+                
+                    $("#symbolGetButton1 .symbolName").text(pretty(WAREHOUSE[options[0]].name));
+                    $("#symbolGetButton1 img")[0].src = imgify(WAREHOUSE[options[0]].name);
+                    $("#symbolGetButton1 .symbolRarity").text(toRarity(WAREHOUSE[options[0]].rarity));
+
+                    $("#symbolGetButton2 .symbolName").text(pretty(WAREHOUSE[options[1]].name));
+                    $("#symbolGetButton2 img")[0].src = imgify(WAREHOUSE[options[1]].name);
+                    $("#symbolGetButton2 .symbolRarity").text(toRarity(WAREHOUSE[options[1]].rarity));
+
+                    $("#symbolGetButton3 .symbolName").text(pretty(WAREHOUSE[options[2]].name));
+                    $("#symbolGetButton3 img")[0].src = imgify(WAREHOUSE[options[2]].name);
+                    $("#symbolGetButton3 .symbolRarity").text(toRarity(WAREHOUSE[options[2]].rarity));
+
+                    $("#rerollButton").text(player.rerolls);
+                    $("#rerollButton")[0].disabled = !player.rerolls;
+
+                    $("#mailInterface")[0].showPopover();
             }
             function giveItemOptions() {
                 player.status = STATES.choosing;
                 // alert("apple")
-                let names = [];
-                let weights = [];
-                let options = [];
+                names = [];
+                weights = [];
+                options = [];
                 _.each(STOREROOM, (value, key)=>{
                     // alert(JSON.stringify(value));
                     if(value.rarity > -1){
                         names.push(key);
-                        weights.push(5-value.rarity);
+                        weights.push(RarityToWeight(value.rarity));
                     }
                 });
                 _.times(3, function(n) {
@@ -695,43 +925,53 @@
                     weights.splice(names.indexOf(result),1)
                     names.splice(names.indexOf(result),1)
                 });
-                let choice = prompt(`Add an ITEM!:\n1: ${STOREROOM[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${STOREROOM[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${STOREROOM[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip`);
-                if(choice < 4 && STOREROOM[options[choice-1]]){
-                    addItem(STOREROOM[options[choice-1]]);
-                }
+                // let choice = prompt(`Add an ITEM!:\n1: ${STOREROOM[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${STOREROOM[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${STOREROOM[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip`);
+                // if(choice < 4 && STOREROOM[options[choice-1]]){
+                //     addItem(STOREROOM[options[choice-1]]);
+                // }
+                $("#mailTitle").text("Choose an ITEM!");
+
+                $("#symbolGetButton1 .symbolName").text(pretty(STOREROOM[options[0]].name));
+                $("#symbolGetButton1 img")[0].src = imgify(STOREROOM[options[0]].name);
+                $("#symbolGetButton1 .symbolRarity").text(toRarity(STOREROOM[options[0]].rarity));
+
+                $("#symbolGetButton2 .symbolName").text(pretty(STOREROOM[options[1]].name));
+                $("#symbolGetButton2 img")[0].src = imgify(STOREROOM[options[1]].name);
+                $("#symbolGetButton2 .symbolRarity").text(toRarity(STOREROOM[options[1]].rarity));
+
+                $("#symbolGetButton3 .symbolName").text(pretty(STOREROOM[options[2]].name));
+                $("#symbolGetButton3 img")[0].src = imgify(STOREROOM[options[2]].name);
+                $("#symbolGetButton3 .symbolRarity").text(toRarity(STOREROOM[options[2]].rarity));
+
+                $("#rerollButton")[0].disabled = true;
+                $("#mailInterface")[0].showPopover();
+            }
+            function choose(choice) {
+                if(player.status != STATES.choosing) return;
                 
+                if(choosingItems){
+                    if(choice < 4 && STOREROOM[options[choice-1]]){
+                        addItem(STOREROOM[options[choice-1]]);
+                    }
+                    giveOptions(1);
+                    alert("a")
+                    return;
+                }else{
+                    if(choice < 4 && WAREHOUSE[options[choice-1]]){
+                        addSymbol(WAREHOUSE[options[choice-1]]);
+                    }else if(choice == 5 && player.rerolls != 0){
+                        player.rerolls--;
+                        giveOptions();
+                        return;
+                    }
+                }
+               
+
+                $("#mailInterface")[0].hidePopover();
                 player.status = STATES.idle;
             }
-
             
-            async function satisfactionTextUpdate(text, element, color) {
-                try {
-                    satisfyingElement.innerText = text;
-                    satisfyingWrapper.style.backgroundColor = `${color}`;
-                    // console.log(JSON.stringify(element.style))
-                    let toLeft = getOffset(element).left + (Number(55) / 4)
-                    let toRight = getOffset(element).top + (Number(55) / 4)
-
-                    $(element).css({ scale: 1.25 });
-                    $(element).animate({ scale: 1 }, { duration: 250, queue: false });
-
-                    $(satisfyingWrapper).css({ left: toLeft + "px", top: toRight + "px", opacity: 0.1, apple: 0.1, "--scale": 0.1 });
-                    // satisfyingWrapper.style.setProperty("--degree", `${45 * Math.ceil(Math.random()*8)}deg`)
-                    $(satisfyingWrapper).animate({ opacity: 1, apple: 1 }, {
-                        duration: 400, step: () => {
-                            satisfyingWrapper.style.setProperty("--scale", satisfyingWrapper.style.opacity);
-                        }
-                    });
-
-                    // shake()
-
-                } catch (error) {
-                    //Ignoring errors for now, jokers error this seemingly randomly...
-                    console.log("STU " + error)
-                }
-
-            }
-
+            
            
 
             $('#lever').on("click", function () {
@@ -755,6 +995,26 @@
                     alert("You have no removal tokens!")
                 }
             });
+            $("#symbolGetButton1").on("click", function () {
+                if ($("#symbolGetButton1")[0].disabled) return;
+                choose(1);
+            });
+            $("#symbolGetButton2").on("click", function () {
+                if ($("#symbolGetButton2")[0].disabled) return;
+                choose(2);
+            });
+            $("#symbolGetButton3").on("click", function () {
+                if ($("#symbolGetButton3")[0].disabled) return;
+                choose(3);
+            });
+            $("#skipButton").on("click", function () {
+                if ($("#skipButton")[0].disabled) return;
+                choose(4);
+            });
+            $("#rerollButton").on("click", function () {
+                if ($("#rerollButton")[0].disabled) return;
+                choose(5);
+            });
             document.addEventListener("keydown", ev => {
                 switch (ev.key)
                 {
@@ -764,6 +1024,21 @@
                         break;
                     case "Backspace":
                         $("#remove").click();
+                        break;
+                    case "1":
+                        $("#symbolGetButton1").click();
+                        break;
+                    case "2":
+                        $("#symbolGetButton2").click();
+                        break;
+                    case "3":
+                        $("#symbolGetButton3").click();
+                        break;
+                    case "4":
+                        $("#skipButton").click();
+                        break;
+                    case "5":
+                        $("#rerollButton").click();
                         break;
                     case "=":
                         $("#stats").click();
@@ -791,35 +1066,35 @@
 
                 }
                 const descriptions = {
-                    CAT: "$1, $9 for each milk it drinks",
-                    ANCHOR: "$1, $4 if in corner",
-                    BANANA: "$1, adds peel when destroyed",
-                    BEE: "$1, +$1 on flower",
-                    BOUNTY_HUNTER: "$1, destroys thiefs for $20",
-                    BUBBLE: "$2, pops after 3 spins",
-                    COAL: "$0, your christmas present",
-                    CRAB: "$1, more for each other crab in row",
-                    CROW: "$2, $-3 every 4 spins",
-                    CULTIST: "$0 + number of cultists on board",
-                    DOG: "$1, $2 if next to a human",
-                    DWARF: "$1, drinks drunk give 10x value",
-                    EGG: "$1 (WIP)",
-                    GAMBLER: "$1, when destroyed: gives 2x times appeared on board",
-                    GOLDFISH: "$1, pops bubbles for $15",
-                    KEY: "$1, unlocks boxes then destroys itself",
-                    LIGHT_BULB: "$1, +$value of rocks nearby. destroys itself after 5 shines",
-                    LOCKBOX: "$1, contains $15 inside",
-                    MAGPIE: "$-1, $9 every 4 spins",
-                    MINER: "$1, destroys adjacent ores for $20",
-                    MONKEY: "$1, eats bananas for $6 each",
-                    ORE: "$1, contains a gem inside",
-                    OWL: "$1, +$1 every 3 spins",
-                    OYSTER: "$1, 20% to add a pearl",
-                    PRESENT: "$0, contains 10. destroys after 12 spins",
-                    SNAIL: "$0, $5 every 4 spins",
-                    THREE_SIDED_DIE: "rolls between $1 and $3, destroys gamblers on $1",
-                    TODDLER: "$1, gives +$6 for each present, candy, or pinata it destroys",
-                    TURTLE: "$0, $4 every 3 spins",
+                    // CAT: "$1, $9 for each milk it drinks",
+                    // ANCHOR: "$1, $4 if in corner",
+                    // BANANA: "$1, adds peel when destroyed",
+                    // BEE: "$1, +$1 on flower",
+                    // BOUNTY_HUNTER: "$1, destroys thiefs for $20",
+                    // BUBBLE: "$2, pops after 3 spins",
+                    // COAL: "$0, your christmas present",
+                    // CRAB: "$1, more for each other crab in row",
+                    // CROW: "$2, $-3 every 4 spins",
+                    // CULTIST: "$0 + number of cultists on board",
+                    // DOG: "$1, $2 if next to a human",
+                    // DWARF: "$1, drinks drunk give 10x value",
+                    // EGG: "$1 (WIP)",
+                    // GAMBLER: "$1, when destroyed: gives 2x times appeared on board",
+                    // GOLDFISH: "$1, pops bubbles for $15",
+                    // KEY: "$1, unlocks boxes then destroys itself",
+                    // LIGHT_BULB: "$1, +$value of rocks nearby. destroys itself after 5 shines",
+                    // LOCKBOX: "$1, contains $15 inside",
+                    // MAGPIE: "$-1, $9 every 4 spins",
+                    // MINER: "$1, destroys adjacent ores for $20",
+                    // MONKEY: "$1, eats bananas for $6 each",
+                    // ORE: "$1, contains a gem inside",
+                    // OWL: "$1, +$1 every 3 spins",
+                    // OYSTER: "$1, 20% to add a pearl",
+                    // PRESENT: "$0, contains 10. destroys after 12 spins",
+                    // SNAIL: "$0, $5 every 4 spins",
+                    // THREE_SIDED_DIE: "rolls between $1 and $3, destroys gamblers on $1",
+                    // TODDLER: "$1, gives +$6 for each present, candy, or pinata it destroys",
+                    // TURTLE: "$0, $4 every 3 spins",
 
                 };
                 const WAREHOUSE = {
