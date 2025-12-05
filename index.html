@@ -415,7 +415,7 @@
             <h2 id="reminder">25 due in 2 spins </h2>
             <h2 id="mailTitle">Add a symbol!</h2>
             <div id="skipContainer">
-                <span style="color:white">Payments: 0/12</span>
+                <span id="payments" style="color:white">Payments: 0/12</span>
                 <button id="skipButton">Skip</button>
                 <button id="rerollButton">Reroll (2)</button>
             </div>
@@ -662,6 +662,10 @@
                             $("#time").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
                             $("#reminder").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
                             break;
+                        case "payments":
+                            target[prop] = value;
+                            $("#payments").text(`${value}/12 Payments`);
+                            break;
                         case "last":
                             let last = target[prop];
                             target[prop] = value;
@@ -747,15 +751,15 @@
 
                 player.status = STATES.counting;
                 let predictedCoins = 0;
-                satisfyingWrapper.style.display = 'inline-block';
 
                 for (const item of player.items) {
                     let itemMod = item.calculate(item, "beforeCount", predictedCoins);
                     predictedCoins += itemMod;
                     player.coins += itemMod;
                     if(itemMod != 0) {
+                        satisfyingWrapper.style.display = 'inline-block';
                         await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#title")[0], `rgba(${itemMod*25},255,0,0.75)`);
-                        await delay(200);
+                        await delay(500);
                     }
                 }
 
@@ -786,7 +790,7 @@
                     player.coins += itemMod;
                     if(itemMod != 0) {
                         await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#title")[0], `rgba(${25*itemMod},255,0,0.75)`);
-                        await delay(200);
+                        await delay(500);
                     }
                 }
                 player.history.push(predictedCoins)
@@ -841,13 +845,13 @@
                         return 50
                         break;
                     case 1:
-                        return 10
+                        return 10 + (player.payments * 7)
                         break;
                     case 2:
-                        return 3
+                        return 3 + (player.payments * 5)
                         break;
                     case 3:
-                        return 1
+                        return 1 + (player.payments * 2)
                         break;
                     default:
                         return 0
@@ -871,7 +875,7 @@
 
                     _.each(WAREHOUSE, (value, key)=>{
                         // alert(JSON.stringify(value));
-                        if(value.rarity > -1 && ( rarity == 0 || (rarity != 0 && value.rarity == rarity))){
+                        if(value.rarity > -1 && ( rarity == 0 || (rarity != 0 && value.rarity >= rarity))){
                             names.push(key);
                             weights.push(RarityToWeight(value.rarity));
                         }
@@ -906,6 +910,7 @@
             }
             function giveItemOptions() {
                 player.status = STATES.choosing;
+                choosingItems = true;
                 // alert("apple")
                 names = [];
                 weights = [];
@@ -954,14 +959,13 @@
                         addItem(STOREROOM[options[choice-1]]);
                     }
                     giveOptions(1);
-                    alert("a")
                     return;
                 }else{
                     if(choice < 4 && WAREHOUSE[options[choice-1]]){
                         addSymbol(WAREHOUSE[options[choice-1]]);
                     }else if(choice == 5 && player.rerolls != 0){
                         player.rerolls--;
-                        giveOptions();
+                        giveOptions(rarity);
                         return;
                     }
                 }
@@ -1518,24 +1522,24 @@
 
                 }; 
                 const STOREROOM = {
-                    ANTHROPOLOGY_DEGREE: {name:"Anthropology Degree", rarity:3, calculate: (self,context,base)=>{
+                    ANTHROPOLOGY_DEGREE: {name:"Anthropology Degree", rarity:2, calculate: (self,context,base)=>{
                         if (typeof context == typeof STOREROOM){
                             return context.symbol.human?1:0;
                         }else { return 0; }
                     }},
-                    BIRDHOUSE: {name:"Birdhouse", rarity:1, calculate: (self,context,base)=>{
+                    BIRDHOUSE: {name:"Birdhouse", rarity:0, calculate: (self,context,base)=>{
                         if (typeof context == typeof STOREROOM){
                             return context.symbol.bird?1:0;
                         }else { return 0; }
                     }},
-                    BLACK_CAT: {name:"Black Cat",rarity:2, calculate: (self,context,base)=>{
+                    BLACK_CAT: {name:"Black Cat",rarity:1, calculate: (self,context,base)=>{
                         if (typeof context == typeof STOREROOM){
                             return context.symbol.name == "cat"?1:0;
                         }else if(context == "onCount"){
                             return base%0==0?9:0;
                         } else { return 0; }
                     }},
-                    BLACK_PEPPER: {name:"Black Pepper",rarity:1, calculate: (self,context,base)=>{
+                    BLACK_PEPPER: {name:"Black Pepper",rarity:0, calculate: (self,context,base)=>{
                         if(context == "onCount"){
                             let old = self.count || 0;
                             self.count = 0;
@@ -1545,7 +1549,7 @@
                             return 0;
                         } else { return 0; }
                     }},
-                    BROWN_PEPPER: {name:"Brown Pepper",rarity:1, calculate: (self,context,base)=>{
+                    BROWN_PEPPER: {name:"Brown Pepper",rarity:0, calculate: (self,context,base)=>{
                         if(context == "onCount"){
                             let old = self.count || 0;
                             self.count = 0;
@@ -1555,7 +1559,7 @@
                             return 0;
                         } else { return 0; }
                     }},
-                    BOWLING_BALL: {name:"Bowling Ball",rarity:4, calculate: (self,context,base)=>{
+                    BOWLING_BALL: {name:"Bowling Ball",rarity:3, calculate: (self,context,base)=>{
                         if(context == "onCount"){
                             return 3;
                         } else { return 0; }
