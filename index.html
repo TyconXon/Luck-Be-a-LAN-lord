@@ -445,6 +445,7 @@
                 <!-- generate other items under here -->
             </div>
         </div >
+        
 <!--  -->
 
         <script>
@@ -766,7 +767,7 @@
                 for (const rows of slots) {
                     for (const slot of rows) {
                         if (!slot.symbol.skip){
-                            await delay(200);
+                            await delay(100);
                             slot.e.css({"background-color":"blue", "outline":"red 3px solid"});
                             satisfyingWrapper.style.display = 'none';
                             let output = await slot.calculate();
@@ -778,7 +779,7 @@
 		                    satisfyingWrapper.style.display = 'inline-block';
                             if(output > 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(${25*output},255,0,0.75)`);
                             else if (output < 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(255,0, 0,0.75)`);
-                            await delay(200);
+                            await delay(100 + (100 * output));
                             slot.e.css("outline","none");
                         }
                     }
@@ -799,7 +800,7 @@
                 await delay(500);
 		        satisfyingWrapper.style.display = 'none';
                 if(player.spins == 0){
-                    alert(`you must pay rent! you have ${player.coins} (${Rentercent(player.coins)}) and it costs ${rentPrice[player.payments]}` )
+                    alert(`you must pay rent! you have ${player.coins} (${Rentercent(player.coins)}%) and it costs ${rentPrice[player.payments]}` )
                     player.coins -= rentPrice[player.payments];
                     if(player.coins < 0){
                         document.write("You've failed to pay rent and you've been evicted!");
