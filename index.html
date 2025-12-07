@@ -379,7 +379,7 @@
 
 
             const delay = (delayInms) => {
-                return new Promise(resolve => setTimeout(resolve, delayInms));
+                return new Promise(resolve => setTimeout(resolve, speed?0:delayInms));
             };
 
             function Rentercent(value){
@@ -473,6 +473,9 @@
                 a.x = x;
                 a.y = y;
                 slots[x][y] = a
+                a.finalOutput = 0;
+                a.bonuses = [];
+                a.tags = [];
                 return slots[x][y];
             }
             function adjacentSlots(x,y){
@@ -521,12 +524,10 @@
             async function bonus(food, self, bonussy){
                 let counting = 0;
                 for (element of adjacentSlots(self.y, self.x)){
-                    element.tags = element.tags || [];
-                    element.bonuses = element.bonuses || [];
                     if (element.symbol.name == food && !element.tags.includes(self.id) ) {
                         counting += 1;
                         element.bonuses.push(bonussy);
-                        element.e.text(food);
+                        // element.e.text(food);
                         element.e.css("outline", "white 2px solid");
                         await delay(500);
                         element.e.css("outline", "none");
@@ -538,12 +539,10 @@
             async function bonusType(food, self, bonussy){
                 let counting = 0;
                 for (element of adjacentSlots(self.y, self.x)){
-                    element.tags = element.tags || [];
-                    element.bonuses = element.bonuses || [];
                     if (element.symbol[food] && !element.tags.includes(self.id) ) {
                         counting += 1;
                         element.bonuses.push(bonussy);
-                        element.e.text(food);
+                        // element.e.text(food);
                         element.e.css("outline", "white 2px solid");
                         await delay(500);
                         element.e.css("outline", "none");
@@ -761,14 +760,16 @@
                     setSlot(x, y, player.inventory[player.inventory.length - 1]);
                 });
                 // _.each(WAREHOUSE,(n)=>{addSymbol(n);});
-                // setSlot(1,0,addSymbol(WAREHOUSE.CAT))
-                // setSlot(2,1,addSymbol(WAREHOUSE.CHERRY));
-                // setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
-                // setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
-                // setSlot(1,4,addSymbol(WAREHOUSE.COIN));
-                setSlot(1,0,addSymbol(WAREHOUSE.TODDLER));
-                setSlot(2,1,addSymbol(WAREHOUSE.BUBBLE));
-                setSlot(1,2,addSymbol(WAREHOUSE.BAR_OF_SOAP));
+                setSlot(1,0,addSymbol(WAREHOUSE.CAT))
+                setSlot(2,1,addSymbol(WAREHOUSE.CHERRY));
+                setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
+                setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
+                setSlot(1,4,addSymbol(WAREHOUSE.COIN));
+                // setSlot(1,4,addSymbol(WAREHOUSE.GAMBLER));
+                // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
+                // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
+                // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
+
 
                 // player.items.push(STOREROOM.BLACK_CAT);
 
@@ -797,8 +798,7 @@
                     y = n%5;
                     $(`#s${x}x${y}y`).css("scale", "1.1");
                     setSlot(x,y, chosen);
-                    chosen.finalOutput = 0;
-                    chosen.executed = false;
+                    
                     modifiedInventory = _.without(modifiedInventory, chosen);
                     await delay(20);
                     
@@ -811,6 +811,8 @@
                 let collective = [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]];
                 let countedNumbers = [];
                 let countedIDs = [];
+                let iterationCounted = {};
+                let iteration = 0;
 
                 for (const item of player.items) {
                     let itemMod = item.calculate(item, "beforeCount", predictedCoins);
@@ -839,7 +841,11 @@
                                     if (queueCanidate == slot){
                                         let tempoEmpty =  new SymbolInstance(WAREHOUSE.EMPTY);
                                         tempoEmpty.finalOutput = 0;
-                                        tempoEmpty.executed = false;
+                                        queueCanidate.e.css({"outline":"red 5px dotted","opacity":"0.25"});
+                                        await delay(350);
+                                        queueCanidate.e.css({"outline":"none","opacity":"1"});
+                                        // collective[slot.x][slot.y] += slot.finalOutput; //I don't think this is OG game behaviour?
+                                        collective[slot.x][slot.y] += slot.symbol.onDestroy?slot.symbol.onDestroy(slot):0;
                                         setSlot(queueCanidate.x, queueCanidate.y, tempoEmpty);
                                         
                                         queuedDeletions = _.without(queuedDeletions, queueCanidate);
@@ -848,10 +854,12 @@
                             }
                             //additions
                             if (slot.symbol == WAREHOUSE.EMPTY && queuedAdditions.length > 0){
+                                slot.e.css({"outline":"green 5px dotted","opacity":"0.25"});
                                 setSlot(slot.x, slot.y, queuedAdditions[0]);
-                                queuedAdditions[0].finalOutput = 0;
-                                queuedAdditions[0].executed = false;
+                                await delay(350);
+                                slot.e.css({"outline":"none","opacity":"1"});
                                 queuedAdditions.shift();
+                                iteration++;
                             }
                             if(slot.symbol == WAREHOUSE.EMPTY){
                                 empties = true;
@@ -861,19 +869,21 @@
                     //Run calculations
                     for (const rows of slots) {
                         for (const slot of rows) {
-                            if (!slot.symbol.skip){
+                            if (!slot.symbol.skip && iterationCounted[slot.id] != iteration){
                                 slot.e.css({"outline":"black 3px solid"});
                                 let output = await slot.calculate("calculate");
                                 slot.e.css({"outline":"none"});
-                                slot.finalOutput += output;
+                                // slot.finalOutput += output;
+                                iterationCounted[slot.id] = iteration
+                                collective[slot.x][slot.y] += output;
                             }
                         }
                     }
-                    //Run final executions
+                    //Run single-time executions
                     for (const rows of slots) {
                         for (const slot of rows) {
                             
-                            if (!slot.symbol.skip && !countedIDs.includes(slot.id)){
+                            if (!countedIDs.includes(slot.id)){
                                 slot.e.css({"outline":"black 3px solid"});
                                 let output = await slot.calculate("execute");
                                 slot.e.css({"outline":"none"});
@@ -885,16 +895,21 @@
                     for (const rows of slots) {
                         for (const slot of rows) {
                             if (true){
-                                if (slot.symbol.bonuses){
+                                if (slot.bonuses){
                                     slot.bonuses.forEach((bonussy,ind) => { //Additives
-                                        let output = typeof bonussy == typeof 32?bonussy:0;
-                                        slot.bonuses[ind] = 0;
-                                        slot.finalOutput += output;
+                                        // alert(bonussy)
+                                        if(typeof bonussy == typeof 32){
+                                            let output = bonussy;
+                                            slot.bonuses[ind] = 0;
+                                            slot.finalOutput += output;
+                                        }
                                     });
                                     slot.bonuses.forEach((bonussy,ind) => { //Multipliers
-                                        let multiplier = typeof bonussy == typeof "string"?Number(bonussy.substring(1)):1;
-                                        slot.bonuses[ind] = 0;
-                                        slot.finalOutput *= multiplier;
+                                        if(typeof bonussy == typeof "string"){
+                                            let multiplier = Number(bonussy.substring(1));
+                                            slot.bonuses[ind] = 0;
+                                            slot.finalOutput *= multiplier;
+                                        }
                                     });
                                 }
                                 // collective[slot.x][slot.y] += slot.finalOutput;
@@ -909,10 +924,13 @@
                             if (!countedIDs.includes(slot.id)){
                                 let output = await slot.calculate("calculateLater");
                                 slot.finalOutput += output;
-                                collective[slot.x][slot.y] = slot.finalOutput;
+                                collective[slot.x][slot.y] += slot.finalOutput;
                                 // if(slot.finalOutput)alert(slot.finalOutput)
                                 countedIDs.push(slot.id)
 
+                            }
+                            if(slot.symbol == WAREHOUSE.EMPTY){
+                                empties = true;
                             }
                         }
                     }
@@ -1057,15 +1075,15 @@
 
                     $("#symbolGetButton1 .symbolName").text(pretty(WAREHOUSE[options[0]].name));
                     $("#symbolGetButton1 img")[0].src = imgify(WAREHOUSE[options[0]].name);
-                    $("#symbolGetButton1 .symbolRarity").text(toRarity(WAREHOUSE[options[0]].rarity));
+                    $("#symbolGetButton1 .symbolRarity").text(`${toRarity(WAREHOUSE[options[0]].rarity)} 🪙${WAREHOUSE[options[0]].base || "?"}`);
 
                     $("#symbolGetButton2 .symbolName").text(pretty(WAREHOUSE[options[1]].name));
                     $("#symbolGetButton2 img")[0].src = imgify(WAREHOUSE[options[1]].name);
-                    $("#symbolGetButton2 .symbolRarity").text(toRarity(WAREHOUSE[options[1]].rarity));
+                    $("#symbolGetButton2 .symbolRarity").text(`${toRarity(WAREHOUSE[options[1]].rarity)} 🪙${WAREHOUSE[options[1]].base || "?"}`);
 
                     $("#symbolGetButton3 .symbolName").text(pretty(WAREHOUSE[options[2]].name));
                     $("#symbolGetButton3 img")[0].src = imgify(WAREHOUSE[options[2]].name);
-                    $("#symbolGetButton3 .symbolRarity").text(toRarity(WAREHOUSE[options[2]].rarity));
+                    $("#symbolGetButton3 .symbolRarity").text(`${toRarity(WAREHOUSE[options[2]].rarity)} 🪙${WAREHOUSE[options[2]].base || "?"}`);
 
                     $("#rerollButton").text(player.rerolls);
                     $("#rerollButton")[0].disabled = !player.rerolls;
@@ -1184,6 +1202,10 @@
                 if ($("#rerollButton")[0].disabled) return;
                 choose(5);
             });
+            var speed = false;
+            document.addEventListener("keyup", ev => {
+                if (ev.key == "Alt") speed = false;
+            });
             document.addEventListener("keydown", ev => {
                 switch (ev.key)
                 {
@@ -1215,6 +1237,9 @@
                         break;
                     case "=":
                         $("#stats").click();
+                        break;
+                    case "Alt":
+                        speed = true
                         break;
                 }
             });
@@ -1396,8 +1421,8 @@
                     FLOWER: new Symbol({name: "flower", rarity: 0,  base:1, }),
 
                     GAMBLER: new Symbol({name: "gambler", rarity: 0, base:1, execute: async(self)=>{
-                        self.savings = self.savings + 2 || 1;
-                        return 1;    
+                        self.savings = self.savings + 2 || 2;
+                        return 0;    
                     }, onDestroy: (self)=>{
                         return self.savings || 2;
                     },  human: 1}),
