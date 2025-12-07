@@ -483,7 +483,9 @@
             async function eat(food, self){
                 let counting = 0;
                 for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol.name == food) {
+                    element.tags = element.tags || [];
+                    if (element.symbol.name == food && !element.tags.includes(self.id) ) {
+                        element.tags.push(self.id);
                         counting += 1;
                         element.e.css("opacity", "1.0");
                         element.e.css("outline", "white 2px solid");
@@ -500,7 +502,9 @@
             async function eatType(type, self){
                 let counting = 0;
                 for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol[type] > 0) {
+                    element.tags = element.tags || [];
+                    if (element.symbol[type] > 0 && !element.tags.includes(self.id) ) {
+                        element.tags.push(self.id);
                         counting += element.symbol[type];
                         element.e.css("opacity", "1.0");
                         element.e.css("outline", "white 2px solid");
@@ -514,35 +518,49 @@
                 };
                 return counting;
             }  //TODO ww 
-            async function bonus(food, self){
+            async function bonus(food, self, bonussy){
                 let counting = 0;
                 for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol.name == food) {
+                    element.tags = element.tags || [];
+                    element.bonuses = element.bonuses || [];
+                    if (element.symbol.name == food && !element.tags.includes(self.id) ) {
                         counting += 1;
+                        element.bonuses.push(bonussy);
                         element.e.text(food);
                         element.e.css("outline", "white 2px solid");
                         await delay(500);
                         element.e.css("outline", "none");
+                        element.tags.push(self.id)
                     }
                 };
                 return counting;
             }
-            async function bonusType(food, self){
+            async function bonusType(food, self, bonussy){
                 let counting = 0;
                 for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol[food]) {
+                    element.tags = element.tags || [];
+                    element.bonuses = element.bonuses || [];
+                    if (element.symbol[food] && !element.tags.includes(self.id) ) {
                         counting += 1;
+                        element.bonuses.push(bonussy);
+                        element.e.text(food);
                         element.e.css("outline", "white 2px solid");
                         await delay(500);
                         element.e.css("outline", "none");
+                        element.tags.push(self.id)
                     }
                 };
                 return counting;
             }
-
+            var queuedAdditions = [];
+            var queuedDeletions = [];
             function addSymbol(symbol){
                 let s = new SymbolInstance(symbol);
-                player.inventory.push(s);
+                if(symbol != WAREHOUSE.EMPTY){
+                    queuedAdditions.push(player.inventory[player.inventory.push(s)-1]);
+                }else{
+                    player.inventory[player.inventory.push(s)-1]
+                }
                 for (const item of player.items) {
                     item.calculate(item, "onAdded", symbol);
                 }
@@ -563,7 +581,7 @@
             };
             function destroySymbol(symbolInstance){
                 player.inventory = _.without(player.inventory, symbolInstance);
-
+                queuedDeletions.push(symbolInstance);
                 let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
                 if(nonNothings.length < 20){
                     addSymbol(WAREHOUSE.EMPTY);
@@ -700,15 +718,36 @@
                 constructor(symbol) {
                     this.symbol = symbol;
                     this.id = SymbolInstance.allIds++;
+                    this.tags = [];
+                    this.bonuses = [];
                 }
 
-                async calculate() {
-                    let base = await this.symbol.calculate(this);
-                    let itemMod = 0;
-                    player.items.forEach(item => {
-                        itemMod += item.calculate(item, this, base);
-                    }); 
-                    return base+itemMod;
+                async calculate(stage = "execute") {
+                    let overallOutput = 0;
+                    let normal = 0;
+                    switch (stage) {
+                        case "calculate":
+                            normal = this.symbol.calculate?await this.symbol.calculate(this):0;
+                            overallOutput += normal;
+                            break;
+                        case "calculateLater":
+                            normal = this.symbol.calculateLater?await this.symbol.calculateLater(this):0;
+                            overallOutput += normal;
+                            break;
+                        case "execute":
+                            let itemMod = 0;
+                            let base = this.symbol.base || 0;
+                            base += this.symbol.execute?await this.symbol.execute(this):0;
+                            player.items.forEach(item => {
+                                itemMod += item.calculate(item, this, base);
+                            });
+                            overallOutput += itemMod + base;
+                    
+                        default:
+                            break;
+                    }
+                     
+                    return overallOutput;
                 }
             }
 
@@ -722,11 +761,15 @@
                     setSlot(x, y, player.inventory[player.inventory.length - 1]);
                 });
                 // _.each(WAREHOUSE,(n)=>{addSymbol(n);});
-                setSlot(1,0,addSymbol(WAREHOUSE.CAT))
-                setSlot(2,1,addSymbol(WAREHOUSE.CHERRY));
-                setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
-                setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
-                setSlot(1,4,addSymbol(WAREHOUSE.COIN));
+                // setSlot(1,0,addSymbol(WAREHOUSE.CAT))
+                // setSlot(2,1,addSymbol(WAREHOUSE.CHERRY));
+                // setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
+                // setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
+                // setSlot(1,4,addSymbol(WAREHOUSE.COIN));
+                setSlot(1,0,addSymbol(WAREHOUSE.TODDLER));
+                setSlot(2,1,addSymbol(WAREHOUSE.BUBBLE));
+                setSlot(1,2,addSymbol(WAREHOUSE.BAR_OF_SOAP));
+
                 // player.items.push(STOREROOM.BLACK_CAT);
 
                 satisfyingWrapper.style.display = 'none';
@@ -743,6 +786,8 @@
                 
                 player.status = STATES.spinning;
                 let modifiedInventory = player.inventory;
+                queuedAdditions = [];
+                queuedDeletions = [];
                 let x,y;
                 for (let n = 0; n < 20; n++) {
                     let chosen = _.sample(modifiedInventory);
@@ -752,6 +797,8 @@
                     y = n%5;
                     $(`#s${x}x${y}y`).css("scale", "1.1");
                     setSlot(x,y, chosen);
+                    chosen.finalOutput = 0;
+                    chosen.executed = false;
                     modifiedInventory = _.without(modifiedInventory, chosen);
                     await delay(20);
                     
@@ -761,7 +808,9 @@
 
                 player.status = STATES.counting;
                 let predictedCoins = 0;
-                let collective = [[],[],[],[]];
+                let collective = [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]];
+                let countedNumbers = [];
+                let countedIDs = [];
 
                 for (const item of player.items) {
                     let itemMod = item.calculate(item, "beforeCount", predictedCoins);
@@ -773,14 +822,112 @@
                         await delay(500);
                     }
                 }
+                try {
+                    
+                    let empties = false;
+                    //before hand calculations
+                do{
+                    empties = false;
+                    //Attempt to resolve queue
+                    for (const rows of slots) {
+                        for (const slot of rows) {
+                            //deletions
+                            if (queuedDeletions.length > 0){
+
+                                for (let index = queuedDeletions.length - 1; index >= 0 ; index--) {
+                                    const queueCanidate = queuedDeletions[index];
+                                    if (queueCanidate == slot){
+                                        let tempoEmpty =  new SymbolInstance(WAREHOUSE.EMPTY);
+                                        tempoEmpty.finalOutput = 0;
+                                        tempoEmpty.executed = false;
+                                        setSlot(queueCanidate.x, queueCanidate.y, tempoEmpty);
+                                        
+                                        queuedDeletions = _.without(queuedDeletions, queueCanidate);
+                                    }
+                                }
+                            }
+                            //additions
+                            if (slot.symbol == WAREHOUSE.EMPTY && queuedAdditions.length > 0){
+                                setSlot(slot.x, slot.y, queuedAdditions[0]);
+                                queuedAdditions[0].finalOutput = 0;
+                                queuedAdditions[0].executed = false;
+                                queuedAdditions.shift();
+                            }
+                            if(slot.symbol == WAREHOUSE.EMPTY){
+                                empties = true;
+                            }
+                        }
+                    }
+                    //Run calculations
+                    for (const rows of slots) {
+                        for (const slot of rows) {
+                            if (!slot.symbol.skip){
+                                slot.e.css({"outline":"black 3px solid"});
+                                let output = await slot.calculate("calculate");
+                                slot.e.css({"outline":"none"});
+                                slot.finalOutput += output;
+                            }
+                        }
+                    }
+                    //Run final executions
+                    for (const rows of slots) {
+                        for (const slot of rows) {
+                            
+                            if (!slot.symbol.skip && !countedIDs.includes(slot.id)){
+                                slot.e.css({"outline":"black 3px solid"});
+                                let output = await slot.calculate("execute");
+                                slot.e.css({"outline":"none"});
+                                slot.finalOutput += output;
+                            }
+                        }
+                    }
+                    //Handle bonuses
+                    for (const rows of slots) {
+                        for (const slot of rows) {
+                            if (true){
+                                if (slot.symbol.bonuses){
+                                    slot.bonuses.forEach((bonussy,ind) => { //Additives
+                                        let output = typeof bonussy == typeof 32?bonussy:0;
+                                        slot.bonuses[ind] = 0;
+                                        slot.finalOutput += output;
+                                    });
+                                    slot.bonuses.forEach((bonussy,ind) => { //Multipliers
+                                        let multiplier = typeof bonussy == typeof "string"?Number(bonussy.substring(1)):1;
+                                        slot.bonuses[ind] = 0;
+                                        slot.finalOutput *= multiplier;
+                                    });
+                                }
+                                // collective[slot.x][slot.y] += slot.finalOutput;
+                            }
+                        }
+                    }
+                    
+                    
+                    //Run later calculations (for symbols that use finalOutput)
+                    for (const rows of slots) {
+                        for (const slot of rows) {
+                            if (!countedIDs.includes(slot.id)){
+                                let output = await slot.calculate("calculateLater");
+                                slot.finalOutput += output;
+                                collective[slot.x][slot.y] = slot.finalOutput;
+                                // if(slot.finalOutput)alert(slot.finalOutput)
+                                countedIDs.push(slot.id)
+
+                            }
+                        }
+                    }
+                    
+                }while((queuedAdditions.length && empties) || queuedDeletions.length)
 
                 for (const rows of slots) {
                     for (const slot of rows) {
-                        if (!slot.symbol.skip){
-                            await delay(100);
+                        if (collective[slot.x][slot.y]){
+                            // alert('a')
+                            let output = collective[slot.x][slot.y];
+                            // await delay(countedNumbers.includes(output)?0:100);
                             slot.e.css({"background-color":"blue", "outline":"red 3px solid"});
                             satisfyingWrapper.style.display = 'none';
-                            let output = await slot.calculate();
+                            slot.e[0].title = output;
                             slot.e.css({"background-color":`rgb(0,${25*output},255)`, "z-index":"15"});
                             // await delay(50);
                             player.coins += output;
@@ -789,8 +936,10 @@
 		                    satisfyingWrapper.style.display = 'inline-block';
                             if(output > 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(${25*output},255,0,0.75)`);
                             else if (output < 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(255,0, 0,0.75)`);
-                            await delay(200);
+                            await delay(300);
                             slot.e.css({"outline":"none", "z-index":"1"});
+                            countedNumbers.push(output);
+
                         }
                     }
                 }
@@ -803,6 +952,9 @@
                         await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#inv")[0], `rgba(${25*itemMod},255,0,0.75)`);
                         await delay(500);
                     }
+                }
+            } catch (error) {
+                    alert(error)
                 }
                 player.history.push(predictedCoins)
                 player.last = predictedCoins;
@@ -1051,10 +1203,14 @@
                     case "3":
                         $("#symbolGetButton3").click();
                         break;
-                    case "4":
+                    case "5":
+                    case "s":
+                    case "S":
                         $("#skipButton").click();
                         break;
-                    case "5":
+                    case "4":
+                    case "r":
+                    case "R":
                         $("#rerollButton").click();
                         break;
                     case "=":
@@ -1066,13 +1222,13 @@
                 class Symbol {
                     static warehouse = [];
                     constructor(parameters){
-                        
-                        let requiredParameters = ["name", "rarity", "calculate"];
-                        requiredParameters.forEach(element => {
-                            if (!Object.keys(parameters).includes(element)) {
-                                console.error("Symbol parameters doesn't include " + element);
-                            }
-                        });
+                        // base, execute, calculate, calculateLater
+                        // let requiredParameters = ["name", "rarity", "calculate"];
+                        // requiredParameters.forEach(element => {
+                        //     if (!Object.keys(parameters).includes(element)) {
+                        //         console.error("Symbol parameters doesn't include " + element);
+                        //     }
+                        // });
                         for (const [key, value] of Object.entries(parameters)) {
                             this[key] = value
                         }
@@ -1115,97 +1271,73 @@
 
                 };
                 const WAREHOUSE = {
-                    EMPTY : new Symbol({name: "empty", rarity: -1, skip:1, calculate: (self)=>{return 0;}}),
-                    CAT: new Symbol({name: "cat", rarity: 0, calculate: async (self)=>{
-                        
-                        let countingCoins = 1;
-                        countingCoins += 9 * await eat("milk", self);
-
-
-                        return countingCoins;    
+                    EMPTY : new Symbol({name: "empty", rarity: -1, skip:1, base:0}),
+                    CAT: new Symbol({name: "cat", rarity: 0, base:1, calculate: async (self)=>{
+                        return 9 * await eat("milk", self); 
                     }}),
 
-                    MILK: new Symbol({name: "milk", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }}),
+                    MILK: new Symbol({name: "milk", rarity: 0, base:1}),
 
-                    ANCHOR: new Symbol({name: "anchor", rarity: 0, calculate: async(self)=>{
+                    ANCHOR: new Symbol({name: "anchor", rarity: 0, base:1, calculate: async(self)=>{
                         if (((self.x == 3 || self.x == 0) && (self.y == 0 || self.y == 4))){
-                            return 5;
+                            return 4;
                         }
-                        return 1;
+                        return 0;
                     }, aquatic: 1}),
 
-                    BANANA: new Symbol({name: "banana", rarity: 0, calculate: async(self)=>{
-                        return 1;
-                    }, onDestroy: (self)=>{
+                    BANANA: new Symbol({name: "banana", rarity: 0, base:1, onDestroy: (self)=>{
                         addSymbol(WAREHOUSE.BANANA_PEEL);
                     }, monkeyLikes: 1, fruit: 1,}),
 
-                    BANANA_PEEL: new Symbol({name: "banana peel", rarity: 0, calculate: async(self)=>{
-                        return 1;    
+                    BANANA_PEEL: new Symbol({name: "banana peel", rarity: 0, base:1}),
+
+                    BEE: new Symbol({name: "bee", rarity: 0, base:1, calculate: async(self)=>{
+                        return await bonus("flower", self, 1);
                     }}),
 
-                    BEE: new Symbol({name: "bee", rarity: 0, calculate: async(self)=>{
-                        return 1 + await bonus("flower", self);
-                    }}),
-
-                    BEER: new Symbol({name: "beer", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }, alch: 1}),
+                    BEER: new Symbol({name: "beer", rarity: 0, base:1, alch: 1}),
                     
-                    BOUNTY_HUNTER: new Symbol({name: "bounty hunter", rarity: 0, calculate: async(self)=>{
-                        let countingCoins = 1;
-                        countingCoins += await eat("thief", self) * 20 
-
-                        return countingCoins; 
+                    BOUNTY_HUNTER: new Symbol({name: "bounty hunter", rarity: 0, base:1, calculate: async(self)=>{
+                        return await eat("thief", self) * 20 ; 
                     }, human: 1}),
 
-                    BUBBLE: new Symbol({name: "bubble", rarity: 0, calculate: async(self)=>{
+                    BUBBLE: new Symbol({name: "bubble", rarity: 0, base:2, execute: async(self)=>{
                         self.timer = self.timer - 1 || 4;
                         if(self.timer == 1){
+                               
                             destroySymbol(self);
-                            self.e.css("opacity", "0.25");                 
-                        }
-                        return 2;    
+                        }   
+                        return 0;
                     }, babyLikes: 1}),
 
-                    CANDY: new Symbol({name: "candy", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }, babyLikes: 1,}),
+                    CANDY: new Symbol({name: "candy", rarity: 0, base:1, babyLikes: 1,}),
 
-                    CHEESE: new Symbol({name: "cheese", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }}),
+                    CHEESE: new Symbol({name: "cheese", rarity: 0, base:1}),
 
-                    CHERRY: new Symbol({name: "cherry", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    },fruit: 1,}),
+                    CHERRY: new Symbol({name: "cherry", rarity: 0, base:1,fruit: 1,}),
 
-                    COAL: new Symbol({name: "coal", rarity: 0, calculate: async(self)=>{
+                    COAL: new Symbol({name: "coal", rarity: 0, base:0, execute: async(self)=>{
                         self.timer = self.timer - 1 || 21;
                         if(self.timer == 1){
                             destroySymbol(self);
-                            self.e.css("opacity", "0.25");                 
+                                             
                         }
                         return 0;   
                     }}),
 
-                    COIN: new Symbol({name: "coin", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }}),
+                    COIN: new Symbol({name: "coin", rarity: 0,  base:1, }),
 
-                    CRAB: new Symbol({name: "crab", rarity: 0, calculate: async(self)=>{
+                    CRAB: new Symbol({name: "crab", rarity: 0, base:1, execute: async(self)=>{
                         let countingCoins = 0;
                         for (element of slots[self.x]){
                             if (element.symbol.name == "crab"){
                                 countingCoins+=1;
                             }
                         }
-                        return countingCoins;
+                        return countingCoins-1;
                     }}),
 
-                    CROW: new Symbol({name: "crow", rarity: 0, calculate: async(self)=>{
+                    CROW: new Symbol({name: "crow", rarity: 0, execute: async(self)=>{
                         self.timer = self.timer - 1 || 5;
                         if(self.timer == 1){
                             return -3;
@@ -1214,7 +1346,7 @@
                     }}),
 
 
-                    CULTIST: new Symbol({name: "cultist", rarity: 0, calculate: async(self)=>{
+                    CULTIST: new Symbol({name: "cultist", rarity: 0, base:0,  execute: async(self)=>{
                         let countingCoins = -1;
                         slots.forEach(row => {
                             countingCoins += _.filter(row, (value) => {
@@ -1224,26 +1356,26 @@
                         return countingCoins;
                     }, human: 1}),
                     
-                    DOG: new Symbol({name: "dog", rarity: 0, calculate: async(self)=>{
+                    DOG: new Symbol({name: "dog", rarity: 0, base:1,  execute: async(self)=>{
 
                         for (element of adjacentSlots(self.y, self.x)){
                             if (element.symbol.human) {
                                 element.e.css("outline", "white 2px solid");
                                 await delay(500);
                                 element.e.css("outline", "none");
-                                return 3;
+                                return 2;
                             }
                         };
 
-                        return 1;
+                        return 0;
                     }}),
 
-                    DWARF: new Symbol({name: "dwarf", rarity: 0, calculate: async (self)=>{
+                    DWARF: new Symbol({name: "dwarf", rarity: 0, base:1, calculateLater: async (self)=>{
                         
-                        let countingCoins = 1;
+                        let countingCoins = 0;
                         for (element of adjacentSlots(self.y, self.x)){
                             if (element.symbol.alch) {
-                                countingCoins += await element.calculate() * 10;
+                                countingCoins += await element.finalOutput * 10;
                                 element.e.css("opacity", "1.0");                 
                                 element.e.css("outline", "white 2px solid");
                                 await delay(500);
@@ -1251,130 +1383,115 @@
                                 await delay(500);
                                 element.e.css("outline", "none");
                                 destroySymbol(element)
-
                             }
                         };
 
                         return countingCoins;    
                     }, human:1}),
 
-                    EGG: new Symbol({name: "egg", rarity: 0, calculate: async(self)=>{
-                        return 1;    
+                    EGG: new Symbol({name: "egg", rarity: 0, base:1,  execute: async(self)=>{
+                        return 0;    //tbd
                     }}),
 
-                    FLOWER: new Symbol({name: "flower", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }}),
+                    FLOWER: new Symbol({name: "flower", rarity: 0,  base:1, }),
 
-                    GAMBLER: new Symbol({name: "gambler", rarity: 0, calculate: async(self)=>{
-                        self.savings = self.savings+1 || 1;
+                    GAMBLER: new Symbol({name: "gambler", rarity: 0, base:1, execute: async(self)=>{
+                        self.savings = self.savings + 2 || 1;
                         return 1;    
                     }, onDestroy: (self)=>{
-                        return self.savings || 1;
+                        return self.savings || 2;
                     },  human: 1}),
 
-                    GOLDFISH: new Symbol({name: "goldfish", rarity: 0, calculate: async (self)=>{
-                        return 1 + (15 * await eat("bubble", self));    
+                    GOLDFISH: new Symbol({name: "goldfish", rarity: 0, base:1,  calculate: async (self)=>{
+                        return (15 * await eat("bubble", self));    
                     }}),
 
-                    GOOSE: new Symbol({name: "goose", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }, bird: 1}),
+                    GOOSE: new Symbol({name: "goose", rarity: 0, base:1, bird: 1}),
 
-                    KEY: new Symbol({name: "key", rarity: 0, calculate: async(self)=>{
+                    KEY: new Symbol({name: "key", rarity: 0, base:1, calculate: async(self)=>{
                         let findBoxes = await eatType("box", self); 
                         if (findBoxes > 0){
                             destroySymbol(self);
-                            self.e.css("opacity", "0.25");                 
-                            self.e.css({"color":"red"}); 
                         }
-                        return 1 + findBoxes;
+                        return findBoxes;
                     }}),
 
-                    LIGHT_BULB: new Symbol({name: "light bulb", rarity: 0, calculate: async(self)=>{
-                        let result = await bonusType("rock", self);
-                        self.uses = self.user - 1 || 6;
-                        if(self.uses == 1){
+                    LIGHT_BULB: new Symbol({name: "light bulb", rarity: 0, base:1,execute: async(self)=>{
+                        self.uses = self.uses - 1 || 6;
+                        if(self.uses <= 1){
                             destroySymbol(self)
-                            self.e.css("opacity", "0.25"); 
+                             
                         }
-                        return 1 + (result * 2);    
+                        return 0;
+                    }, calculate: async(self)=>{
+                        let result = await bonusType("rock", self, "x2");
+                        self.uses = self.uses - result || 6;
+                        if(self.uses <= 1){
+                            destroySymbol(self)
+                             
+                        }
+                        return 0;    
                     }}),
 
-                    LOCKBOX: new Symbol({name: "lockbox", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }, box: 15}),
+                    LOCKBOX: new Symbol({name: "lockbox", rarity: 0, base:1,  box: 15}),
 
-                    MAGPIE: new Symbol({name: "magpie", rarity: 0, calculate: async(self)=>{
+                    MAGPIE: new Symbol({name: "magpie", rarity: 0, base:1, execute: async(self)=>{
                         self.timer = self.timer - 1 || 5;
                         if(self.timer == 1){
-                            return 9;
+                            return 8;
                         }
-                        return -1;  
+                        return -2;  
                     }, bird: 1}),
 
-                    MINER: new Symbol({name: "miner", rarity: 0, calculate: async (self)=>{
-                        
-                        let countingCoins = 1;
-                        countingCoins += 20 * await eatType("ore", self);
-
-                        return countingCoins;    
+                    MINER: new Symbol({name: "miner", rarity: 0,base:1, calculate: async (self)=>{
+                        return 20 * await eatType("ore", self);   
                     }, human:1}),
 
-                    MONKEY: new Symbol({name: "monkey", rarity: 0, calculate: async (self)=>{
-                        return 1 + (6 * await eatType("monkeyLikes", self));    
+                    MONKEY: new Symbol({name: "monkey", rarity: 0, base:1, calculate: async (self)=>{
+                        return (6 * await eatType("monkeyLikes", self));    
                     }, beast: 1}),
 
-                    GOLDFISH: new Symbol({name: "goldfish", rarity: 0, calculate: async (self)=>{
-                        return 1 + (20 * await eat("cheese", self));    
+                    MOUSE: new Symbol({name: "mouse", rarity: 0, base:1, calculate: async (self)=>{
+                        return (20 * await eat("cheese", self));    
                     }, beast:1}),
 
-                    ORE: new Symbol({name: "ore", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }, onDestroy: (self)=>{
+                    ORE: new Symbol({name: "ore", rarity: 0, base:1, onDestroy: (self)=>{
                         addSymbol(WAREHOUSE.SAPPHIRE);
                     }, ore:1}),
 
-                    OWL: new Symbol({name: "owl", rarity: 0, calculate: async(self)=>{
+                    OWL: new Symbol({name: "owl", rarity: 0, base:1, execute: async(self)=>{
                         self.timer = self.timer - 1 || 4;
                         if(self.timer == 1){
-                            return 2;
+                            return 1;
                         }
-                        return 1;  
+                        return 0;  
                     }, bird: 1}),
 
-                    OYSTER: new Symbol({name: "oyster", rarity: 0, calculate: async(self)=>{
+                    OYSTER: new Symbol({name: "oyster", rarity: 0, base:1, execute: async(self)=>{
                         if(_.random(0, 10) == 10){
-                            self.e.text((unu, l)=>{return l+"!"});
                             addSymbol(WAREHOUSE.PEARL)
                         }
-                        return 1;
+                        return 0;
 
                     }, aquatic:1}),
 
-                    PEARL: new Symbol({name: "pearl", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }, aquatic:1, rock:1}),
+                    PEARL: new Symbol({name: "pearl", rarity: 0,  base:1, aquatic:1, rock:1}),
 
-                    PRESENT: new Symbol({name: "present", rarity: 0, calculate: async(self)=>{
+                    PRESENT: new Symbol({name: "present", rarity: 0, execute: async(self)=>{
                         self.timer = self.timer - 1 || 13;
                         if(self.timer == 1){
                             destroySymbol(self);
-                            self.e.css("opacity", "0.25");                 
+                                             
                             return 10;
                         }
                         return 0;    
                     }, babyLikes:1}),
 
-                    SEED: new Symbol({name: "seed", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }}),
+                    SEED: new Symbol({name: "seed", rarity: 0,  base:1,}),
                     
-                    SHINY_PEBBLE: new Symbol({name: "shiny pebble", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }, rock:1}),
+                    SHINY_PEBBLE: new Symbol({name: "shiny pebble", rarity: 0, base:1, rock:1}),
 
-                    SNAIL: new Symbol({name: "snail", rarity: 0, calculate: async(self)=>{
+                    SNAIL: new Symbol({name: "snail", rarity: 0, base:0, execute: async(self)=>{
                         self.timer = self.timer - 1 || 5;
                         if(self.timer == 1){
                             return 5;
@@ -1382,7 +1499,7 @@
                         return 0;  
                     }, aquatic: 1}),
 
-                    THREE_SIDED_DIE: new Symbol({name: "d3", rarity: 0, calculate: async(self)=>{
+                    THREE_SIDED_DIE: new Symbol({name: "d3", rarity: 0, execute: async(self)=>{
                         let result = _.random(1,3);
                         if(result == 1){
                             for (var row of slots){
@@ -1403,11 +1520,11 @@
                         return result;
                     }, dice: 1}),
 
-                    TODDLER: new Symbol({name: "toddler", rarity: 0, calculate: async (self)=>{
-                        return 1 + (6 * await eatType("babyLikes", self));    
+                    TODDLER: new Symbol({name: "toddler", rarity: 0, base:1, calculate: async (self)=>{
+                        return (6 * await eatType("babyLikes", self));    
                     }, human: 1}),
 
-                    TURTLE: new Symbol({name: "turtle", rarity: 0, calculate: async(self)=>{
+                    TURTLE: new Symbol({name: "turtle", rarity: 0, base:0, execute: async(self)=>{
                         self.timer = self.timer - 1 || 4;
                         if(self.timer == 1){
                             return 4;
@@ -1415,44 +1532,39 @@
                         return 0;  
                     }, aquatic: 1}),
 
-                    URN: new Symbol({name: "urn", rarity: 0, calculate: async(self)=>{
-                        return 1;    
-                    }, urn: 1}),
+                    URN: new Symbol({name: "urn", rarity: 0, base:1, urn: 1}),
 
-                    BAR_OF_SOAP: new Symbol({name: "bar of soap", rarity: 1, calculate: async(self)=>{
+                    BAR_OF_SOAP: new Symbol({name: "bar of soap", rarity: 1, base:1, execute: async(self)=>{
                         self.timer = self.timer - 1 || 4;
+                        await delay(200);
                         addSymbol(WAREHOUSE.BUBBLE);
                         if(self.timer == 1){
                             destroySymbol(self);
-                            self.e.css("opacity", "0.25");                 
+                                             
                         }
-                        return 1;    
+                        return 0;    
                     }}),
 
                     BEAR: new Symbol({name: "bear", rarity: 1, calculate: async(self)=>{
-                        return 2;    
+                        return 2;    //tbd
                     }}),
 
-                    BIG_ORE: new Symbol({name: "big ore", rarity: 1, calculate: async(self)=>{
-                        return 2;    
-                    }, onDestroy: (self)=>{
+                    BIG_ORE: new Symbol({name: "big ore", rarity: 1,  base:2, onDestroy: (self)=>{
                         addSymbol(WAREHOUSE.SAPPHIRE);
                         addSymbol(WAREHOUSE.SAPPHIRE);
                     }, ore:2}),
 
-                    BIG_URN: new Symbol({name: "big urn", rarity: 1, calculate: async(self)=>{
-                        return 2;    
-                    }, urn:2}),
+                    BIG_URN: new Symbol({name: "big urn", rarity: 1,  base:2, urn:2}),
 
                     BILLIONAIRE: new Symbol({name: "billionaire", rarity: 1, calculate: async(self)=>{
-                        return 0;    
+                        return 0;    //tbd
                     }}),
 
-                    // BRONZE_ARROW: new Symbol({name: "bronze arrow", rarity: 1, calculate: async(self)=>{
-                    //     return 0;  //placeholder   
-                    // }}),
+                    BRONZE_ARROW: new Symbol({name: "bronze arrow", rarity: 1, calculate: async(self)=>{
+                        return 0;  //placeholder   tbd
+                    }}),
 
-                    FIVE_SIDED_DIE: new Symbol({name: "d5", rarity: 1, calculate: async(self)=>{
+                    FIVE_SIDED_DIE: new Symbol({name: "d5", rarity: 1, execute: async(self)=>{
                         let result = _.random(1,5);
                         if(result == 1){
                             for (var row of slots){
@@ -1473,64 +1585,52 @@
                         return result;
                     }, dice: 2}),
 
-                    GOLEM: new Symbol({name: "golem", rarity: 1, calculate: async(self)=>{
+                    GOLEM: new Symbol({name: "golem", rarity: 1, base:0, execute: async(self)=>{
                         self.timer = self.timer - 1 || 6;
                         if(self.timer == 1){
                             destroySymbol(self);
                             _.times(5,()=>{addSymbol(WAREHOUSE.ORE)});
-                            self.e.css("opacity", "0.25");
+                            
                         }
                         return 0;   
                     }}),
 
-                    HOOLIGAN: new Symbol({name: "hooligan", rarity: 1, calculate: async (self)=>{
-                        
-                        let countingCoins = 1;
-                        countingCoins += 6 * await eatType("urn", self);
-
-                        return countingCoins;    
+                    HOOLIGAN: new Symbol({name: "hooligan", rarity: 1, base:1, calculate: async (self)=>{
+                        return 6 * await eatType("urn", self); 
                     }, human:1}),
 
-                    PINATA: new Symbol({name: "pinata", rarity: 1, calculate: async(self)=>{
-                        return 1;    
-                    }, onDestroy: (self)=>{
+                    PINATA: new Symbol({name: "pinata", rarity: 1, base:1, onDestroy: (self)=>{
                         _.times(7, ()=>{addSymbol(WAREHOUSE.CANDY);}); 
                     }, babyLikes: 1,}),
 
-                    SAFE: new Symbol({name: "safe", rarity: 1, calculate: async(self)=>{
-                        return 1;    
-                    }, box: 30}),
+                    SAFE: new Symbol({name: "safe", rarity: 1, base:1, box: 30}),
 
-                    SAPPHIRE: new Symbol({name: "sapphire", rarity: 1, calculate: async(self)=>{
-                        return 2;    
-                    }, rock: 2}),
+                    SAPPHIRE: new Symbol({name: "sapphire", rarity: 1, base:2, rock: 2}),
 
-                    THIEF: new Symbol({name: "thief", rarity: 1, calculate: async(self)=>{
+                    THIEF: new Symbol({name: "thief", rarity: 1, base:-1, execute: async(self)=>{
                         self.savings = self.savings+4 || 1;
-                        return -1;    
+                        return 0;    
                     }, onDestroy: (self)=>{
                         return self.savings || 1;
                     },  human: 1}),
 
-                    VOID_CREATURE: new Symbol({name: "void creature", rarity: 1, calculate: async(self)=>{
-                        let result = await bonus("empty", self);
+                    VOID_CREATURE: new Symbol({name: "void creature", rarity: 1, base:1, calculate: async(self)=>{
+                        let result = await bonus("empty", self, 2);
                         if(result == 0){
                             destroySymbol(self);
-                            self.e.css("opacity", "0.25");
-                            return 8;
+                            
+                            return 7;
                         }
-                        return 1 + (result * 2);    
+                        return 0;    
                     }}),
 
-                    WEALTHY_CAPSULE: new Symbol({name: "lucky capsule", rarity: 1, calculate: async(self)=>{
+                    WEALTHY_CAPSULE: new Symbol({name: "lucky capsule", rarity: 1, base:10, execute: async(self)=>{
                         destroySymbol(self);
-                        self.e.css("opacity", "0.25");
-                        return 10;
+                        
+                        return 0;
                     }}),
 
-                    WINE: new Symbol({name: "wine", rarity: 1, calculate: async(self)=>{
-                        return 2;    
-                    }, alch: 2}),
+                    WINE: new Symbol({name: "wine", rarity: 1, base:2, alch: 2}),
 
 
                 }; 
