@@ -173,6 +173,7 @@
             #symbolChoiceContainer {
                 width: 100%;
                 display: flex;
+                /* display:none; */
                 flex-direction: row;
                 gap: 5px;
                 margin-top: 10px;
@@ -412,14 +413,14 @@
         <button id="remove">Remove a symbol</button>
 <!--  -->
         <div popover="manual" id="mailInterface" open>
-            <h2 id="reminder">25 due in 2 spins </h2>
-            <h2 id="mailTitle">Add a symbol!</h2>
+            <h2 id="reminder">25 due in 4 spins </h2>
+            <h2 id="mailTitle">INBOX</h2>
             <div id="skipContainer">
                 <span id="payments" style="color:white">Payments: 0/12</span>
                 <button id="skipButton">Skip</button>
                 <button id="rerollButton">Reroll (2)</button>
             </div>
-            <div id="symbolChoiceContainer">
+            <div id="symbolChoiceContainer" >
                 <div class="symbolGetButton" id="symbolGetButton1">
                     <div>
                         <p class="symbolName">Crow</p>
@@ -444,11 +445,17 @@
                 
                 <!-- generate other items under here -->
             </div>
+            <div id="mailContents" hidden>
+                <p id="mailText" style="color:white">Hello, your rent payment is due.</p>
+                <button id="ok">Ok</button>
+            </div>
         </div >
         
 <!--  -->
 
         <script>
+            // $("#mailInterface")[0].showPopover();
+
             const slots = [
                 [],
                 [],
@@ -775,13 +782,35 @@
 
                 satisfyingWrapper.style.display = 'none';
             }
+            async function email(title,message){
+                player.status = STATES.reading;
+                $("#mailTitle").html(title);
+                $("#symbolChoiceContainer").css("display","none");
+                $("#mailContents")[0].hidden = false;
+                
+                $("#mailText").html(message);
+                $("#rerollButton")[0].disabled = true;
+                $("#skipButton")[0].disabled = true;
+                
+
+                $("#mailInterface")[0].showPopover();
+                await waitListener($("#ok")[0], "click");
+                $("#mailInterface")[0].hidePopover();
+                $("#symbolChoiceContainer").css("display","flex");
+                $("#mailContents")[0].hidden = true;
+                $("#skipButton")[0].disabled = false;
+                player.status = STATES.idle;
+            }
             
             async function spin(){
                 if (player.status != STATES.idle) return;
+                // await email("a","b");
+                // await email("d","c");
+
                 player.spins -= 1;
                 player.coins -= 1;
                 if ( player.coins < 0 ){
-                    alert("You don't have enough money to spin and you've been evicted!");
+                    await email("Your landlord.","You don't have enough money to spin and you've been evicted!");
                     return;
                 }
                 
@@ -980,15 +1009,14 @@
                 await delay(500);
 		        satisfyingWrapper.style.display = 'none';
                 if(player.spins == 0){
-                    alert(`you must pay rent! you have ${player.coins} (${Rentercent(player.coins)}%) and it costs ${rentPrice[player.payments]}` )
+                    await email("Your landlord.",`you must pay rent! you have ${player.coins} (${Rentercent(player.coins)}%) and it costs ${rentPrice[player.payments]}` )
                     player.coins -= rentPrice[player.payments];
                     if(player.coins < 0){
                         document.write("You've failed to pay rent and you've been evicted!");
                         return;
                     }
-                    alert(`You paid rent!`)
+                    await email("Your landlord.",`You paid rent! You've earned rerolls and removal tokens.`)
                     player.payments += 1;
-                    alert("You gained rerolls and removals!");
                     player.rerolls += 2;
                     player.removals += 2;
                     giveItemOptions()
@@ -1211,7 +1239,8 @@
                 {
                     case " ":
                         ev.preventDefault();
-                        spin();
+                        if(player.status == STATES.idle) spin();
+                        else if(player.status == STATES.reading) $("#ok").click();
                         break;
                     case "Backspace":
                         $("#remove").click();
