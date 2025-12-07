@@ -411,9 +411,10 @@
         <p id="currencies">###</p>
         <p id="inv">###</p>
         <button id="remove">Remove a symbol</button>
+        <button id="welcome">Welcome / Settings</button>
 <!--  -->
         <div popover="manual" id="mailInterface" open>
-            <h2 id="reminder">25 due in 4 spins </h2>
+            <h2 id="reminder">25 due in 5 spins </h2>
             <h2 id="mailTitle">INBOX</h2>
             <div id="skipContainer">
                 <span id="payments" style="color:white">Payments: 0/12</span>
@@ -558,6 +559,16 @@
                 };
                 return counting;
             }
+            async function giveBonus(element, self, bonussy, del = 500){
+                if (!element.tags.includes(self.id) ) {
+                    element.bonuses.push(bonussy);
+                    element.e.css("outline", "white 2px solid");
+                    await delay(del);
+                    element.e.css("outline", "none");
+                    element.tags.push(self.id)
+                }
+                return;
+            }
             var queuedAdditions = [];
             var queuedDeletions = [];
             function addSymbol(symbol){
@@ -588,7 +599,7 @@
             function destroySymbol(symbolInstance){
                 player.inventory = _.without(player.inventory, symbolInstance);
                 queuedDeletions.push(symbolInstance);
-                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
+                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
                 if(nonNothings.length < 20){
                     addSymbol(WAREHOUSE.EMPTY);
                 }
@@ -772,7 +783,7 @@
                 setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
                 setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
                 setSlot(1,4,addSymbol(WAREHOUSE.COIN));
-                // setSlot(1,4,addSymbol(WAREHOUSE.GAMBLER));
+
                 // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
                 // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
                 // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
@@ -1049,18 +1060,20 @@
                 }
             }
             function RarityToWeight(a){
+                let shinies = player.inventory.filter((a)=>{return a.symbol == WAREHOUSE.SHINY_PEBBLE}).length;
+                
                 switch (a) {
                     case 0:
-                        return 50
+                        return 80
                         break;
                     case 1:
-                        return 10 + (player.payments * 7)
+                        return 5 + (player.payments * 7) + (shinies*10)
                         break;
                     case 2:
-                        return 3 + (player.payments * 5)
+                        return 3 + (player.payments * 5) + (shinies*5)
                         break;
                     case 3:
-                        return 1 + (player.payments * 2)
+                        return 1 + (player.payments * 2) + shinies
                         break;
                     default:
                         return 0
@@ -1099,6 +1112,7 @@
                     });
                     // let choice = prompt(`1: ${WAREHOUSE[options[0]].name}\n2: ${WAREHOUSE[options[1]].name} \n3: ${WAREHOUSE[options[2]].name} \n4: skip\n${player.rerolls?"5: reroll":""} (${player.rerolls})`);
                     $("#mailTitle").text("Choose a SYMBOL!");
+                    $("#payments").text(`${player.payments}/12 Payments |${RarityToWeight(0)}|${RarityToWeight(1)}|${RarityToWeight(2)}|${RarityToWeight(3)}|`);
                     $(".symbolGetButton").css("backgroundColor","rgba(25,255,25,0.25)");
 
                     $("#symbolGetButton1 .symbolName").text(pretty(WAREHOUSE[options[0]].name));
@@ -1229,6 +1243,9 @@
             $("#rerollButton").on("click", function () {
                 if ($("#rerollButton")[0].disabled) return;
                 choose(5);
+            });
+            $("#welcome").on("click", async function(){
+                await email("Your landlord.","Enjoy your stay in our apartment complex. It comes with a complimentary slot machine. You can use it to get 🪙 and pay your rent. Speaking of which, your rent is 🪙25 and is due in 5 spins. <br> Good luck,<br>-Your Landlord<br><span style='color:gray'>Landy_McLandlord@bouncy.mail</span>");
             });
             var speed = false;
             document.addEventListener("keyup", ev => {
@@ -1366,7 +1383,7 @@
 
                     CANDY: new Symbol({name: "candy", rarity: 0, base:1, babyLikes: 1,}),
 
-                    CHEESE: new Symbol({name: "cheese", rarity: 0, base:1}),
+                    CHEESE: new Symbol({name: "cheese", rarity: 0, base:1, richLikes:1}),
 
                     CHERRY: new Symbol({name: "cherry", rarity: 0, base:1,fruit: 1,}),
 
@@ -1541,7 +1558,14 @@
                         return 0;    
                     }, babyLikes:1}),
 
-                    SEED: new Symbol({name: "seed", rarity: 0,  base:1,}),
+                    SEED: new Symbol({name: "seed", rarity: 0,  base:1, execute:async(self)=>{
+                        let result = _.random(1,4);
+                        if(result == 1){
+                            destroySymbol(self);
+                            addSymbol(WAREHOUSE.BANANA)
+                        }
+                        return 0;
+                    }}), //tbd
                     
                     SHINY_PEBBLE: new Symbol({name: "shiny pebble", rarity: 0, base:1, rock:1}),
 
@@ -1610,11 +1634,17 @@
 
                     BIG_URN: new Symbol({name: "big urn", rarity: 1,  base:2, urn:2}),
 
-                    BILLIONAIRE: new Symbol({name: "billionaire", rarity: 1, calculate: async(self)=>{
+                    BILLIONAIRE: new Symbol({name: "billionaire", rarity: 1, base:0, calculate: async(self)=>{
+                        await bonusType("richLikes", self, "x2")
                         return 0;    //tbd
-                    }}),
+                    }, onDestroy: (self)=>{
+                        return 39;
+                    },}),
 
-                    BRONZE_ARROW: new Symbol({name: "bronze arrow", rarity: 1, calculate: async(self)=>{
+                    BRONZE_ARROW: new Symbol({name: "bronze arrow", rarity: 1, base:0, execute: async(self)=>{
+                        for (element of slots[self.x]){
+                            if(element != self) await giveBonus(element,self,"x2", 100);
+                        }
                         return 0;  //placeholder   tbd
                     }}),
 
@@ -1683,8 +1713,13 @@
                         
                         return 0;
                     }}),
+                    BUFFING_CAPSULE: new Symbol({name: "buffing powder", rarity: 1, base:0, execute: async(self)=>{
+                        await bonusType("name",self,"x2")
+                        destroySymbol(self);
+                        return 0;
+                    }}),
 
-                    WINE: new Symbol({name: "wine", rarity: 1, base:2, alch: 2}),
+                    WINE: new Symbol({name: "wine", rarity: 1, base:2, alch: 2, richLikes:1}),
 
 
                 }; 
