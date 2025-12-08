@@ -20,6 +20,9 @@
                 color:white;
                 image-rendering: pixelated;
             }
+            textarea{
+                -webkit-text-stroke: 0em rgba(0,0,0,1);
+            }
 
             #machine{
                 display:grid;
@@ -1092,7 +1095,7 @@
                 
                 switch (a) {
                     case 0:
-                        return 80 + tediums
+                        return 100 + (tediums * 10)
                         break;
                     case 1:
                         return 5 + (player.payments * 7) + (shinies*10)
@@ -1281,14 +1284,44 @@
                 if ($("#rerollButton")[0].disabled) return;
                 choose(5);
             });
+            var dontRegister = false;
             $("#welcome").on("click", async function(){
-                await email("Your landlord.",`<br>Enjoy your stay in our apartment complex. It comes with a complimentary slot machine. You can use it to get 🪙 and pay your rent. Speaking of which, your rent is <c>${rentPrice[player.payments]}</c> and is due in <sp>${player["spins"]} spins</sp>. <br> Good luck,<br>-Your Landlord<br><address>Landy_McLandlord@bouncy.mail</address><br><a href="https://github.com/TyconXon/Luck-Be-a-LAN-lord">Recreation by Maximus Fayte Miller (check out my other games!)</a><br><a href="https://trampolinetales.com/">Original game by TrampolineTales (buy their games!)</a><br>${Object.keys(WAREHOUSE).length} symbols out of 152 <i>(${Math.round(100*Object.keys(WAREHOUSE).length/152)}%)</i> complete`);
+                dontRegister = true;
+                await email("Your landlord.",`
+                Enjoy your stay in our apartment complex. It comes with a complimentary slot machine. You can use it to get 🪙 and pay your rent. Speaking of which, your rent is <c>${rentPrice[player.payments]}</c> and is due in <sp>${player["spins"]} spins</sp>. <br> 
+                Good luck,<br>
+                -Your Landlord<br>
+                <address>Landy_McLandlord@bouncy.mail</address><br>
+                <a href="https://github.com/TyconXon/Luck-Be-a-LAN-lord">Recreation by Maximus Fayte Miller (check out my other games!)</a><br>
+                <a href="https://trampolinetales.com/">Original game by TrampolineTales (buy their games!)</a><br>
+                ${Object.keys(WAREHOUSE).length} symbols out of 152 <i>(${Math.round(100*Object.keys(WAREHOUSE).length/152)}%)</i> complete <br>
+                <br>
+                <h2>Settings</h2>
+                <textarea id="JS" placeholder="Javascript">${localStorage.javascript || ""}</textarea>
+                <textarea id="CSS" placeholder="CSS">${localStorage.cascadingStyleSheets || ""}</textarea>
+                <button onclick="changeSettings()">Submit</button>
+
+                `);
+                dontRegister = false;
+
             });
+            eval(localStorage.javascript || "")
+            $("html").append("<style>"+ localStorage.cascadingStyleSheets || "" +"</style>"); 
+            
+            function changeSettings(){
+                localStorage.javascript = $("#JS")[0].value;
+                localStorage.cascadingStyleSheets = $("#CSS")[0].value;
+                eval($("#JS")[0].value);
+                $("html").append("<style>"+$("#CSS")[0].value+"</style>");
+
+            }
+            
             var speed = false;
             document.addEventListener("keyup", ev => {
                 if (ev.key == "Alt") speed = false;
             });
             document.addEventListener("keydown", ev => {
+                if (dontRegister) return;
                 switch (ev.key)
                 {
                     case " ":
@@ -1323,6 +1356,9 @@
                         break;
                     case "Alt":
                         speed = true
+                        break;
+                    case "F2":
+                        localStorage.clear();
                         break;
                 }
             });
