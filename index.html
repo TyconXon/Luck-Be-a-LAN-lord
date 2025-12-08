@@ -18,6 +18,7 @@
                 -webkit-text-stroke: 0.2em rgba(0,0,0,1);
                 paint-order: stroke fill;
                 color:white;
+                image-rendering: pixelated;
             }
 
             #machine{
@@ -197,6 +198,28 @@
             button:disabled{
                 text-decoration: line-through;
                 opacity:0.5;
+            }
+            sp{
+                color:red;
+            }
+            c{
+                color:yellow;
+            }
+            address{
+                color:grey;
+            }
+            c::before {
+                content: "";
+                /* You may need to adjust size and positioning using other CSS properties */
+
+                background-image: url('assets/sprites/coin.png');
+                aspect-ratio: 1/1;
+                margin:2px;
+                background-size: contain; /* Adjust as needed */
+                vertical-align: middle;
+                background-position: center center; /* Adjust as needed */
+                display: inline-block; /* Or inline-block, depending on layout */
+                height: 1em; 
             }
 
             .symbolGetButton img {
@@ -698,7 +721,7 @@
                         case "spins":
                             target[prop] = Math.max(0,value);
                             $("#time").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
-                            $("#reminder").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
+                            $("#reminder").html(`<c>${rentPrice[target["payments"]]}</c> due in <sp>${target[prop]}</sp> spins`)
                             break;
                         case "payments":
                             target[prop] = value;
@@ -1023,19 +1046,20 @@
                 await delay(500);
 		        satisfyingWrapper.style.display = 'none';
                 if(player.spins == 0){
-                    await email("Your landlord.",`you must pay rent! you have ${player.coins} and it costs ${rentPrice[player.payments]} (${Rentercent(player.coins)}%)` )
+                    await email("Your landlord.",`Hello,<br> Your rent is due, pay up.<br>Thanks,<br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>` );
                     player.coins -= rentPrice[player.payments];
                     if(player.coins < 0){
-                        document.write("You've failed to pay rent and you've been evicted!");
+                        document.write("Your rent is late and you are being evicted. GAME OVER! <br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>");
                         return;
                     }
-                    await email("Your landlord.",`You paid rent! You've earned rerolls and removal tokens.`)
                     player.payments += 1;
-                    player.rerolls += 2;
-                    player.removals += 2;
-                    giveItemOptions()
+                    player.rerolls += 1;
+                    player.removals += 1;
                     // player.history = [];
                     player.spins = rentSpins[player.payments]
+                    await email("Your landlord.",`Hello,<br> Your rent has increased to <c>${rentPrice[player.payments]}</c>, and is due in <sp>${player.spins} spins</sp>.<br>Good luck,<br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>`)
+                    giveItemOptions()
+
                     
                 }else{
                     giveOptions()
@@ -1130,15 +1154,15 @@
 
                     $("#symbolGetButton1 .symbolName").text(pretty(WAREHOUSE[options[0]].name));
                     $("#symbolGetButton1 img")[0].src = imgify(WAREHOUSE[options[0]].name);
-                    $("#symbolGetButton1 .symbolRarity").text(`${toRarity(WAREHOUSE[options[0]].rarity)} 🪙${WAREHOUSE[options[0]].base || "?"}`);
+                    $("#symbolGetButton1 .symbolRarity").html(`${toRarity(WAREHOUSE[options[0]].rarity)} <c>${WAREHOUSE[options[0]].base || "?"}</c>`);
 
                     $("#symbolGetButton2 .symbolName").text(pretty(WAREHOUSE[options[1]].name));
                     $("#symbolGetButton2 img")[0].src = imgify(WAREHOUSE[options[1]].name);
-                    $("#symbolGetButton2 .symbolRarity").text(`${toRarity(WAREHOUSE[options[1]].rarity)} 🪙${WAREHOUSE[options[1]].base || "?"}`);
+                    $("#symbolGetButton2 .symbolRarity").html(`${toRarity(WAREHOUSE[options[1]].rarity)} <c>${WAREHOUSE[options[1]].base || "?"}</c>`);
 
                     $("#symbolGetButton3 .symbolName").text(pretty(WAREHOUSE[options[2]].name));
                     $("#symbolGetButton3 img")[0].src = imgify(WAREHOUSE[options[2]].name);
-                    $("#symbolGetButton3 .symbolRarity").text(`${toRarity(WAREHOUSE[options[2]].rarity)} 🪙${WAREHOUSE[options[2]].base || "?"}`);
+                    $("#symbolGetButton3 .symbolRarity").html(`${toRarity(WAREHOUSE[options[2]].rarity)} <c>${WAREHOUSE[options[2]].base || "?"}</c>`);
 
                     $("#rerollButton").text(player.rerolls);
                     $("#rerollButton")[0].disabled = !player.rerolls;
@@ -1153,8 +1177,8 @@
                 weights = [];
                 options = [];
                 _.each(STOREROOM, (value, key)=>{
-                    // alert(JSON.stringify(value));
-                    if(value.rarity > -1){
+                    // alert(JSON.stringify(value)); ;
+                    if(value.rarity > -1 && (!player.items.includes(value) || _.filter(STOREROOM, (a)=>{return !player.items.includes(a)}).length < 3)){
                         names.push(key);
                         weights.push(RarityToWeight(value.rarity));
                     }
@@ -1258,7 +1282,7 @@
                 choose(5);
             });
             $("#welcome").on("click", async function(){
-                await email("Your landlord.",`Enjoy your stay in our apartment complex. It comes with a complimentary slot machine. You can use it to get 🪙 and pay your rent. Speaking of which, your rent is 🪙${rentPrice[player.payments]} and is due in ${rentSpins[player.payments]} spins. <br> Good luck,<br>-Your Landlord<br><span style='color:gray'>Landy_McLandlord@bouncy.mail</span>`);
+                await email("Your landlord.",`<br>Enjoy your stay in our apartment complex. It comes with a complimentary slot machine. You can use it to get 🪙 and pay your rent. Speaking of which, your rent is <c>${rentPrice[player.payments]}</c> and is due in <sp>${player["spins"]} spins</sp>. <br> Good luck,<br>-Your Landlord<br><address>Landy_McLandlord@bouncy.mail</address>`);
             });
             var speed = false;
             document.addEventListener("keyup", ev => {
@@ -2068,7 +2092,7 @@
                         }
                         return 0;  //placeholder   tbd
                     }}),
-                    MEGA_CHEST: new Symbol({name: "mega chest", rarity: 2, base:2, box: 100}),
+                    MEGA_CHEST: new Symbol({name: "mega chest", rarity: 3, base:2, box: 100}),
                     WILDCARD: new Symbol({name: "wildcard", rarity: 3, calculateLater: async(self)=>{
                         let result = 0;
                         for (element of adjacentSlots(self.y, self.x)){
@@ -2089,6 +2113,36 @@
                     BIRDHOUSE: {name:"Birdhouse", rarity:0, calculate: (self,context,base)=>{
                         if (typeof context == typeof STOREROOM){
                             return context.symbol.bird?1:0;
+                        }else { return 0; }
+                    }},
+                    RICKY_THE_BANANA: {name:"Ricky the Banana", rarity:0, calculate: (self,context,base)=>{
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol.name.includes("banana")?2:0;
+                        }else { return 0; }
+                    }},
+                    OSWALD_THE_MONKEY: {name:"Oswald the Monkey", rarity:0, calculate: (self,context,base)=>{
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol.name.includes("monkey")?base:0;
+                        }else { return 0; }
+                    }},
+                    PIZZA_THE_CAT: {name:"Pizza the Cat", rarity:0, calculate: (self,context,base)=>{
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol.name.includes("cat")?1:0;
+                        }else { return 0; }
+                    }},
+                    KYLE_THE_KERNITE: {name:"Kyle the Kernite", rarity:0, calculate: (self,context,base)=>{
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol.ore || context.symbol == WAREHOUSE.SHINY_PEBBLE?1:0;
+                        }else { return 0; }
+                    }},
+                    JACKOLANTERN: {name:"Jackolantern", rarity:0, calculate: (self,context,base)=>{
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol == WAREHOUSE.TODDLER || context.symbol == WAREHOUSE.CANDY?1:0;
+                        }else { return 0; }
+                    }},
+                    NORI_THE_RABBIT: {name:"Nori the Rabbit", rarity:0, calculate: (self,context,base)=>{
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol.name.includes("rabbit")?1:0;
                         }else { return 0; }
                     }},
                     BLACK_CAT: {name:"Black Cat",rarity:1, calculate: (self,context,base)=>{
@@ -2126,6 +2180,58 @@
                     POOL_BALL: {name:"Pool Ball",rarity:0, calculate: (self,context,base)=>{
                         if(context == "onCount"){
                             return 1;
+                        } else { return 0; }
+                    }},
+                    BLUE_PEPPER: {name:"Blue Pepper",rarity:0, calculate: (self,context,base)=>{
+                        if(context == "onCount"){
+                            let nothings = player.inventory.filter((a)=>{return a.symbol.name == "empty"});
+                            if (nothings.length >=3) return 3;
+                            return 0;
+                        } else { return 0; }
+                    }},
+                    CYAN_PEPPER: {name:"Cyan Pepper",rarity:0, calculate: (self,context,base)=>{
+                        if(context == "onCount"){
+                            
+                            let counts = {};
+                            let sampleArray = _.flatten(slots);
+                            sampleArray.forEach(function (x) {if(x.symbol.name == "empty"){return;} counts[x.symbol.name] = (counts[x.symbol.name] || 0) + 1; });
+                            
+                            // alert(JSON.stringify(sampleArray));
+                            // alert(JSON.stringify(counts))
+                            if(_.any(counts, (x)=>{return x >=3})){
+                                return 0;
+                            }
+                            return 3;
+                        } else { return 0; }
+                    }},
+                    GREEN_PEPPER: {name:"Green Pepper",rarity:0, calculate: (self,context,base)=>{
+                        if(context == "onCount"){
+                            
+                            let counts = {};
+                            let sampleArray = _.flatten(slots);
+                            sampleArray.forEach(function (x) {if(x.symbol.name == "empty"){return;} counts[x.symbol.name] = (counts[x.symbol.name] || 0) + 1; });
+                            
+                            // alert(JSON.stringify(sampleArray));
+                            // alert(JSON.stringify(counts))
+                            if(_.any(counts, (x)=>{return x >=3})){
+                                return 3;
+                            }
+                            return 0;
+                        } else { return 0; }
+                    }},
+                    RED_PEPPER: {name:"Red Pepper",rarity:0, calculate: (self,context,base)=>{
+                        if(context == "onCount"){
+                            
+                            let counts = {};
+                            let sampleArray = _.flatten(slots);
+                            sampleArray.forEach(function (x) {if(x.symbol.name == "empty"){return;} counts[x.symbol.name] = (counts[x.symbol.name] || 0) + 1; });
+                            
+                            // alert(JSON.stringify(sampleArray));
+                            // alert(JSON.stringify(counts))
+                            if(_.any(counts, (x)=>{return x > 1})){
+                                return 0;
+                            }
+                            return 5;
                         } else { return 0; }
                     }},
                 };
