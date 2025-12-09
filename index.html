@@ -694,7 +694,7 @@
                 let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
                 _.each(filterdInv, (value)=>{
                     let avg = Math.floor(10*calculateAverage(value["history"]))/10;
-                    myInv.push(`<img inventory title="${pretty(value.symbol.name)} 🪙${value.symbol.base || "?"}, x̄${avg}" src="assets/sprites/${value.symbol.name.replaceAll(" ","_")}.png">`)
+                    myInv.push(`<img inventory onclick="rID(${value.id})" title="${pretty(value.symbol.name)} 🪙${value.symbol.base || "?"}, x̄${avg}" src="assets/sprites/${value.symbol.name.replaceAll(" ","_")}.png">`)
                 });
                 _.each(player.items, (value)=>{
                     myItems.push(value.name)
@@ -703,6 +703,15 @@
                     Symbols: ${filterdInv.length} <br> 
                     ${myInv.join(", ")}
                 `);
+            }
+            function rID(vID){
+                player.inventory = _.without(player.inventory, player.inventory.filter((a)=>{return a.id == vID})[0] );
+                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
+                if(nonNothings.length < 20){
+                    addSymbol(WAREHOUSE.EMPTY);
+                }
+                updInventory()
+                player.removals--;
             }
 
             const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6, "dead":-1};
@@ -1387,7 +1396,7 @@
                 
                 `);
                 dontRegister = false;
-
+                changeSettings();
             }
             eval(localStorage.javascript || "")
             $("html").append("<style>"+ localStorage.cascadingStyleSheets || "" +"</style>"); 
