@@ -455,7 +455,7 @@
         <p id="stats">%%%</p>
         <p id="currencies">###</p>
         <p id="inv">###</p>
-        <button id="remove">Remove a symbol</button>
+        <button id="remove" style="display:none;">Remove a symbol</button>
         <button id="welcome">Welcome / Settings</button>
 <!--  -->
         <div popover="manual" id="mailInterface" open>
@@ -520,12 +520,13 @@
             const satisfyingWrapper = document.getElementById('satisfactionWrapper');
             const satisfyingElement = document.getElementById('satisfaction');
 
-            function imgify(name){
-                return `assets/sprites/${name.replaceAll(" ","_").toLowerCase()}.png`
+            function imgify(symbol){
+                if(symbol.image) return symbol.image;
+                return `assets/sprites/${symbol.name.replaceAll(" ","_").toLowerCase()}.png`
             }
             function setSlot(x,y,a){
                 a.e = $(`#s${x}x${y}y`)
-                a.e.html(`<img src="assets/sprites/${a.symbol.name.replaceAll(" ","_")}.png">`);
+                a.e.html(`<img src="${imgify(a.symbol)}">`);
                 a.e.css({"background-color":a.symbol.name == "empty"?"gray":"red", "opacity": "1.0"})
                 // console.log(x,y)
                 a.x = x;
@@ -705,6 +706,8 @@
                 `);
             }
             function rID(vID){
+                if(player.removals < 1) return;
+                if(!confirm("Delete this?")) return;
                 player.inventory = _.without(player.inventory, player.inventory.filter((a)=>{return a.id == vID})[0] );
                 let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
                 if(nonNothings.length < 20){
@@ -1237,15 +1240,15 @@
                     $(".symbolGetButton").css("backgroundColor","rgba(25,255,25,0.25)");
 
                     $("#symbolGetButton1 .symbolName").text(pretty(WAREHOUSE[options[0]].name));
-                    $("#symbolGetButton1 img")[0].src = imgify(WAREHOUSE[options[0]].name);
+                    $("#symbolGetButton1 img")[0].src = imgify(WAREHOUSE[options[0]]);
                     $("#symbolGetButton1 .symbolRarity").html(`${toRarity(WAREHOUSE[options[0]].rarity)} <c>${WAREHOUSE[options[0]].base || "?"}</c>`);
 
                     $("#symbolGetButton2 .symbolName").text(pretty(WAREHOUSE[options[1]].name));
-                    $("#symbolGetButton2 img")[0].src = imgify(WAREHOUSE[options[1]].name);
+                    $("#symbolGetButton2 img")[0].src = imgify(WAREHOUSE[options[1]]);
                     $("#symbolGetButton2 .symbolRarity").html(`${toRarity(WAREHOUSE[options[1]].rarity)} <c>${WAREHOUSE[options[1]].base || "?"}</c>`);
 
                     $("#symbolGetButton3 .symbolName").text(pretty(WAREHOUSE[options[2]].name));
-                    $("#symbolGetButton3 img")[0].src = imgify(WAREHOUSE[options[2]].name);
+                    $("#symbolGetButton3 img")[0].src = imgify(WAREHOUSE[options[2]]);
                     $("#symbolGetButton3 .symbolRarity").html(`${toRarity(WAREHOUSE[options[2]].rarity)} <c>${WAREHOUSE[options[2]].base || "?"}</c>`);
 
                     $("#rerollButton").text(player.rerolls);
@@ -1283,15 +1286,15 @@
                 $(".symbolGetButton").css("backgroundColor","rgba(0, 255, 47, 0.4)");
 
                 $("#symbolGetButton1 .symbolName").text(pretty(STOREROOM[options[0]].name));
-                $("#symbolGetButton1 img")[0].src = imgify(STOREROOM[options[0]].name);
+                $("#symbolGetButton1 img")[0].src = imgify(STOREROOM[options[0]]);
                 $("#symbolGetButton1 .symbolRarity").text(toRarity(STOREROOM[options[0]].rarity));
 
                 $("#symbolGetButton2 .symbolName").text(pretty(STOREROOM[options[1]].name));
-                $("#symbolGetButton2 img")[0].src = imgify(STOREROOM[options[1]].name);
+                $("#symbolGetButton2 img")[0].src = imgify(STOREROOM[options[1]]);
                 $("#symbolGetButton2 .symbolRarity").text(toRarity(STOREROOM[options[1]].rarity));
 
                 $("#symbolGetButton3 .symbolName").text(pretty(STOREROOM[options[2]].name));
-                $("#symbolGetButton3 img")[0].src = imgify(STOREROOM[options[2]].name);
+                $("#symbolGetButton3 img")[0].src = imgify(STOREROOM[options[2]]);
                 $("#symbolGetButton3 .symbolRarity").text(toRarity(STOREROOM[options[2]].rarity));
 
                 $("#rerollButton")[0].disabled = true;
@@ -1733,7 +1736,7 @@
                     }, beast:1}),
 
                     ORE: new Symbol({name: "ore", rarity: 0, base:1, onDestroy: (self)=>{
-                        addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE]));
+                        addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE,WAREHOUSE.VOID_STONE]));
                     }, ore:1}),
 
                     OWL: new Symbol({name: "owl", rarity: 0, base:1, execute: async(self)=>{
@@ -1835,8 +1838,8 @@
                     BEAR: new Symbol({name: "bear", rarity: 1,base:2, beast: 1}),
 
                     BIG_ORE: new Symbol({name: "big ore", rarity: 1,  base:2, onDestroy: (self)=>{
-                        addSymbol(WAREHOUSE.SAPPHIRE);
-                        addSymbol(WAREHOUSE.SAPPHIRE);
+                        addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE,WAREHOUSE.VOID_STONE]));
+                        addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE,WAREHOUSE.VOID_STONE]));
                     }, ore:2}),
 
                     BIG_URN: new Symbol({name: "big urn", rarity: 1,  base:2, urn:2, onDestroy: (self)=>{
@@ -1924,7 +1927,7 @@
                         return self.savings || 1;
                     },  human: 1}),
 
-                    VOID_CREATURE: new Symbol({name: "void creature", rarity: 1, base:1, calculate: async(self)=>{
+                    VOID_CREATURE: new Symbol({name: "void creature", rarity: 1, base:1, execute: async(self)=>{
                         let result = await bonus("empty", self, 2);
                         if(result == 0){
                             destroySymbol(self);
@@ -1933,7 +1936,7 @@
                         }
                         return 0;    
                     }, beast: 1}),
-                    VOID_FRUIT: new Symbol({name: "void fruit", rarity: 1, base:1, calculate: async(self)=>{
+                    VOID_FRUIT: new Symbol({name: "void fruit", rarity: 1, base:1, execute: async(self)=>{
                         let result = await bonus("empty", self, 2);
                         if(result == 0){
                             destroySymbol(self);
@@ -1942,7 +1945,7 @@
                         }
                         return 0;    
                     }, food: 1}),
-                    VOID_STONE: new Symbol({name: "void stone", rarity: 1, base:1, calculate: async(self)=>{
+                    VOID_STONE: new Symbol({name: "void stone", rarity: 1, base:1, execute: async(self)=>{
                         let result = await bonus("empty", self, 2);
                         if(result == 0){
                             destroySymbol(self);
@@ -2165,7 +2168,7 @@
                     GENERAL_ZAROFF: new Symbol({name: "general zaroff", rarity: 2,base:1, calculate: async (self)=>{
                         return 25 * await eatType("human", self);   
                     }, human:1}),
-                    KING_MIDAS: new Symbol({name: "king midas", rarity: 2, base:1, execute: async(self)=>{
+                    KING_MIDAS: new Symbol({name: "king midas", rarity: 2, base:1, calculate: async(self)=>{
                         await bonus("coin",self,"x2");
                         addSymbol(WAREHOUSE.COIN)
                         return 0;
@@ -2296,7 +2299,7 @@
                     }},
                     BLACK_CAT: {name:"Black Cat",rarity:1, calculate: (self,context,base)=>{
                         if (typeof context == typeof STOREROOM){
-                            return context.symbol.name == "cat"?1:0;
+                            return context.symbol.name == "cat"?base:0;
                         }else if(context == "onCount"){
                             return base%0==0?9:0;
                         } else { return 0; }
