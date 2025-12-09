@@ -19,9 +19,15 @@
                 paint-order: stroke fill;
                 color:white;
                 image-rendering: pixelated;
+                cursor: url("assets/cursor/cursor_00.png"), auto;
+
             }
-            textarea{
+            textarea, select, input{
                 -webkit-text-stroke: 0em rgba(0,0,0,1);
+                vertical-align:middle;
+            }
+            label{
+                vertical-align:middle;
             }
 
             #machine{
@@ -61,6 +67,8 @@
                 margin-top: 1%;
                 color:white;
                 -webkit-text-stroke: 0.15em rgba(0,0,0,1);
+                cursor: url("assets/cursor/cursor_10.png"), hand;
+
             }
             h1{
                 text-align:center;
@@ -153,7 +161,6 @@
                 /* height:25px; */
                 color:white; border:solid 3px black;
                 font-size: 100%;
-                cursor: hand;
                 box-shadow: 3px 3px 0px black;
                 display: inline-block;
                 float:right;
@@ -195,7 +202,7 @@
             }
             .symbolGetButton:hover{
                 outline: white 3px solid;
-                cursor: hand;
+                cursor: url("assets/cursor/cursor_10.png"), hand;
                 /* -webkit-text-stroke: 0.15em rgba(0,0,0,0); */
             }
             button:disabled{
@@ -223,6 +230,7 @@
                 background-position: center center; /* Adjust as needed */
                 display: inline-block; /* Or inline-block, depending on layout */
                 height: 1em; 
+                
             }
 
             .symbolGetButton img {
@@ -235,6 +243,17 @@
             }
             .symbolName{
                 font-size:25px;
+            }
+            [inventory]{
+                transition: 0.15s all ease;
+                cursor: url("assets/cursor/cursor_09.png"), auto;
+            }
+            [inventory]:hover{
+                scale:2.15;
+                filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.5));   
+            }
+            #mailText{
+                /* margin:20px; */
             }
         </style>
 
@@ -445,7 +464,7 @@
             <div id="skipContainer">
                 <span id="payments" style="color:white">Payments: 0/12</span>
                 <button id="skipButton">Skip</button>
-                <button id="rerollButton">Reroll (2)</button>
+                <button id="rerollButton">Reroll</button>
             </div>
             <div id="symbolChoiceContainer" >
                 <div class="symbolGetButton" id="symbolGetButton1">
@@ -475,6 +494,7 @@
             <div id="mailContents" hidden>
                 <p id="mailText" style="color:white">Hello, your rent payment is due.</p>
                 <button id="ok">Ok</button>
+                <br><br><br>
             </div>
         </div >
         
@@ -492,6 +512,10 @@
             
             const rentSpins = [5,5,6,6,7,7,8,8,9,9,10,10,10];
             const rentPrice = [25,50,100,150,225,300,350,425,575,625,675,777,1000];
+            var g_reroll = 2;
+            var g_removal = 2;
+            var g_essence = 2;
+            var g_duds = 0;
             
             const satisfyingWrapper = document.getElementById('satisfactionWrapper');
             const satisfyingElement = document.getElementById('satisfaction');
@@ -669,7 +693,8 @@
                 let myItems = [];
                 let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
                 _.each(filterdInv, (value)=>{
-                    myInv.push(`<img src="assets/sprites/${value.symbol.name.replaceAll(" ","_")}.png">`)
+                    let avg = Math.floor(10*calculateAverage(value["history"]))/10;
+                    myInv.push(`<img inventory title="${pretty(value.symbol.name)} 🪙${value.symbol.base || "?"}, x̄${avg}" src="assets/sprites/${value.symbol.name.replaceAll(" ","_")}.png">`)
                 });
                 _.each(player.items, (value)=>{
                     myItems.push(value.name)
@@ -695,6 +720,7 @@
                 tokens : 0,
 
                 payments : 0,
+                floor: 1,
                 spins : rentSpins[0],
                 last: 0,
                 history: [],
@@ -713,11 +739,20 @@
                             
                             $("#coins").text(target[prop])
                             $("#percentage").text(`(${Rentercent(value)}%)`);
-                            $("#coins").css("color", rentPrice[target["payments"]]>value?`rgb(25,25,${(Rentercent(value)/100)*255})`:"lime")
+                            $("#coins").css("color", rentPrice[target["payments"]]>value?`rgb(25,25,${(Rentercent(value)/100)*255})`:"lime");
+                            if(rentPrice[target["payments"]]<=value){
+                                $("html").css("cursor",`url("assets/cursor/cursor_01.png"), auto`)
+                            }else if(target["payments"] >= 6){
+                                $("html").css("cursor",`url("assets/cursor/cursor_02.png"), auto`)
+                            }else{
+                                $("html").css("cursor",`url("assets/cursor/cursor_00.png"), auto`)
+                            }
+                
                             break;
                         case "status":
                             target[prop] = value;
                             $("#lever").prop("disabled", value != STATES.idle);
+                            $("#welcome").prop("disabled", value != STATES.idle);
                             $("#remove").prop("disabled", value != STATES.idle || target["removals"] <= 0);
 
                             break;
@@ -765,6 +800,7 @@
                     this.id = SymbolInstance.allIds++;
                     this.tags = [];
                     this.bonuses = [];
+                    this.history = [];
                 }
 
                 async calculate(stage = "execute") {
@@ -796,7 +832,8 @@
                 }
             }
 
-            function init(){
+            var started = false;
+            async function init(){
                 _.times(20, (n)=>{
                     let x = Math.floor(n/5);
                     let y = n%5;
@@ -811,6 +848,7 @@
                 setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
                 setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
                 setSlot(1,4,addSymbol(WAREHOUSE.COIN));
+                satisfyingWrapper.style.display = 'none';
 
                 // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
                 // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
@@ -818,8 +856,29 @@
 
 
                 // player.items.push(STOREROOM.BLACK_CAT);
-
-                satisfyingWrapper.style.display = 'none';
+                await welcome();
+                if ( player.floor >= 2 ){
+                    rentPrice[6] += 25;
+                    if ( player.floor >= 3 ) rentPrice[7] += 25;
+                    if ( player.floot >= 4 ) g_removal = 1;
+                    if ( player.floor >= 5 ) setSlot(3,2,addSymbol(WAREHOUSE.DUD));
+                    if ( player.floor >= 6 ) rentPrice[9] += 25;
+                    if ( player.floor >= 7 ) addSymbol(WAREHOUSE.DUD);
+                    if ( player.floor >= 8 ) rentPrice[10] += 25;
+                    if ( player.floor >= 9 ) g_reroll = 1;
+                    if ( player.floor >= 10) g_duds = 25;
+                    if ( player.floor >= 11) {addSymbol(WAREHOUSE.DUD)} // Landlord has 250 more HP
+                    if ( player.floor >= 12) addSymbol(WAREHOUSE.DUD);
+                    if ( player.floor >= 13) {addSymbol(WAREHOUSE.DUD)} // Landlord has 750 more HP (Replaces Floor 11 effect)
+                    if ( player.floor >= 14) g_duds = 20;
+                    if ( player.floor >= 15) {addSymbol(WAREHOUSE.DUD)} // Landlord uses more challenging fine print
+                    if ( player.floor >= 16) g_essence = 1;
+                    if ( player.floor >= 17) {addSymbol(WAREHOUSE.DUD)} // Landlord uses 2x more fine print
+                    if ( player.floor >= 18) rentPrice[9] += 25
+                    if ( player.floor >= 19) g_duds = 15;
+                    if ( player.floor >= 20) {addSymbol(WAREHOUSE.SQUIGGLE)} // Landlord uses 3x more fine print (Replaces Floor 17 effect)
+                }
+                started = true;
             }
             async function email(title,message){
                 player.status = STATES.reading;
@@ -1015,6 +1074,7 @@
                             slot.e.css({"background-color":"blue", "outline":"red 3px solid"});
                             satisfyingWrapper.style.display = 'none';
                             slot.e[0].title = output;
+                            slot.history.push(output);
                             slot.e.css({"background-color":`rgb(0,${25*output},255)`, "z-index":"15"});
                             // await delay(50);
                             player.coins += output;
@@ -1040,14 +1100,19 @@
                         await delay(500);
                     }
                 }
-            } catch (error) {
+                } catch (error) {
                     alert(error)
                 }
                 player.history.push(predictedCoins)
                 player.last = predictedCoins;
+                if(g_duds != 0){
+                    if ( player.spins % g_duds == 0 ) addSymbol(WAREHOUSE.DUD);
+                }
 
                 await delay(500);
 		        satisfyingWrapper.style.display = 'none';
+
+                // Payment
                 if(player.spins == 0){
                     await email("Your landlord.",`Hello,<br> Your rent is due, pay up.<br>Thanks,<br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>` );
                     player.coins -= rentPrice[player.payments];
@@ -1056,11 +1121,18 @@
                         return;
                     }
                     player.payments += 1;
-                    player.rerolls += 1;
-                    player.removals += 1;
-                    // player.history = [];
+
                     player.spins = rentSpins[player.payments]
                     await email("Your landlord.",`Hello,<br> Your rent has increased to <c>${rentPrice[player.payments]}</c>, and is due in <sp>${player.spins} spins</sp>.<br>Good luck,<br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>`)
+                    
+                    if(player.payments >= 4 && player.payments % 2 == 0){
+                        player.rerolls += g_reroll;
+                        player.tokens += g_essence;
+                        player.removals += g_removal;
+                        await email("New Email",`Hello Comrade,<br> Your local mutual aid network has heard of your rent situation.<br> To help with your trials, we are giving you reroll tokens, essence tokens, and removal tokens to help defeat your landlord.<br>Stay strong,<br><address style="color:red">Commie_McComrade@bouncy.mail</address>`)
+                    }
+                    
+                    // player.history = [];
                     giveItemOptions()
 
                     
@@ -1095,13 +1167,13 @@
                 
                 switch (a) {
                     case 0:
-                        return 100 + (tediums * 10)
+                        return 120 + (tediums * 10)
                         break;
                     case 1:
-                        return 5 + (player.payments * 7) + (shinies*10)
+                        return 5 + (player.payments * 5) + (shinies*10)
                         break;
                     case 2:
-                        return 3 + (player.payments * 5) + (shinies*5)
+                        return 3 + (player.payments * 3) + (shinies*5)
                         break;
                     case 3:
                         return 1 + (player.payments * 2) + shinies
@@ -1145,7 +1217,7 @@
                     
                     $("#skipButton")[0].disabled = false;
                     if ( hexxed == 1){
-                        email("Choose a SYMBOL..?", "You've been HEXXED! Your symbols are nowhere to be found...");
+                        email("Choose a SYMBOL..?", "You've been HEXED! Your symbols are nowhere to be found...");
                         hexxed = 0;
                         return;
                     }else if ( hexxed == 2){
@@ -1285,7 +1357,8 @@
                 choose(5);
             });
             var dontRegister = false;
-            $("#welcome").on("click", async function(){
+            $("#welcome").on("click", welcome);
+            async function welcome(){
                 dontRegister = true;
                 await email("Your landlord.",`
                 Enjoy your stay in our apartment complex. It comes with a complimentary slot machine. You can use it to get 🪙 and pay your rent. Speaking of which, your rent is <c>${rentPrice[player.payments]}</c> and is due in <sp>${player["spins"]} spins</sp>. <br> 
@@ -1295,25 +1368,45 @@
                 <a href="https://github.com/TyconXon/Luck-Be-a-LAN-lord">Recreation by Maximus Fayte Miller (check out my other games!)</a><br>
                 <a href="https://trampolinetales.com/">Original game by TrampolineTales (buy their games!)</a><br>
                 ${Object.keys(WAREHOUSE).length} symbols out of 152 <i>(${Math.round(100*Object.keys(WAREHOUSE).length/152)}%)</i> complete <br>
+                ${Object.keys(STOREROOM).length} items out of 227 <i>(${Math.round(100*Object.keys(STOREROOM).length/227)}%)</i> complete <br>
+
                 <br>
                 <h2>Settings</h2>
+                <button onclick="changeSettings()">Submit</button>
+            
+                <p>Press F2 at any time to reset your settings. Press SPACE to continue.</p>
+            
+                <label for="floor">Floor (difficulty):</label>
+                <select id="floorIn" ${started?"disabled":""} name="floor" value="${localStorage.floor}">
+                    ${genFloors()}
+                </select>
+                
+                <br><hr>
                 <textarea id="JS" placeholder="Javascript">${localStorage.javascript || ""}</textarea>
                 <textarea id="CSS" placeholder="CSS">${localStorage.cascadingStyleSheets || ""}</textarea>
-                <button onclick="changeSettings()">Submit</button>
-
+                
                 `);
                 dontRegister = false;
 
-            });
+            }
             eval(localStorage.javascript || "")
             $("html").append("<style>"+ localStorage.cascadingStyleSheets || "" +"</style>"); 
+            player.floor = Number(localStorage.floor);
             
             function changeSettings(){
                 localStorage.javascript = $("#JS")[0].value;
                 localStorage.cascadingStyleSheets = $("#CSS")[0].value;
+                localStorage.floor = $("#floorIn")[0].value;
+                player.floor = Number(localStorage.floor);
                 eval($("#JS")[0].value);
                 $("html").append("<style>"+$("#CSS")[0].value+"</style>");
-
+            }
+            function genFloors(){
+                let finString = "";
+                _.times(20, function(x) {
+                  finString += `<option value="${x+1}" ${x+1==localStorage.floor?"selected":""}>${x+1}</option>`
+                })
+                return finString;
             }
             
             var speed = false;
@@ -1321,7 +1414,15 @@
                 if (ev.key == "Alt") speed = false;
             });
             document.addEventListener("keydown", ev => {
-                if (dontRegister) return;
+                if (dontRegister) {
+                    if(ev.key == " " && document.activeElement.tagName != "TEXTAREA") $("#ok").click();
+                    if(ev.key == Number(ev.key) && ev.key != " " && document.activeElement.tagName != "TEXTAREA" && !$("#floorIn")[0].disabled) {
+                        ev.preventDefault();
+                        $("#floorIn")[0].value = ev.ctrlKey?Number(ev.key)+10:ev.key == "0"?20:ev.key
+                    }
+                    if(ev.key == "Enter" && ev.altKey) changeSettings();
+                    return;
+                }
                 switch (ev.key)
                 {
                     case " ":
@@ -1416,6 +1517,9 @@
                 };
                 const WAREHOUSE = {
                     EMPTY : new Symbol({name: "empty", rarity: -1, skip:1, base:0}),
+                    DUD : new Symbol({name: "dud", rarity: -1, skip:1, base:0}),
+                    SQUIGGLE : new Symbol({name: "squiggle", rarity: -1, base:-1}),
+
                     CAT: new Symbol({name: "cat", rarity: 0, base:1, calculate: async (self)=>{
                         return 9 * await eat("milk", self); 
                     }, beast: 1}),
@@ -1620,7 +1724,7 @@
                     }, beast:1}),
 
                     ORE: new Symbol({name: "ore", rarity: 0, base:1, onDestroy: (self)=>{
-                        addSymbol(WAREHOUSE.SAPPHIRE);
+                        addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE]));
                     }, ore:1}),
 
                     OWL: new Symbol({name: "owl", rarity: 0, base:1, execute: async(self)=>{
