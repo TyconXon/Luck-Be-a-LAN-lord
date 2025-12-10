@@ -76,6 +76,7 @@
 
             .overhead{
                 width:20%;margin:auto;text-align:center;font-size: 30px;background-color:white;
+                border:black 3px solid;
             }
             #inv{
                 width: 80%;margin:auto;text-align:center;
@@ -695,7 +696,7 @@
                 let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
                 _.each(filterdInv, (value)=>{
                     let avg = Math.floor(10*calculateAverage(value["history"]))/10;
-                    myInv.push(`<img inventory onclick="rID(${value.id})" title="${pretty(value.symbol.name)} 🪙${value.symbol.base || "?"}, x̄${avg}" src="assets/sprites/${value.symbol.name.replaceAll(" ","_")}.png">`)
+                    myInv.push(`<img inventory onclick="rID(${value.id})" title="${pretty(value.symbol.name)} 🪙${value.symbol.base || "?"}, x̄${avg}" src="${imgify(value.symbol)}">`)
                 });
                 _.each(player.items, (value)=>{
                     myItems.push(value.name)
@@ -890,6 +891,7 @@
                     if ( player.floor >= 19) g_duds = 15;
                     if ( player.floor >= 20) {addSymbol(WAREHOUSE.SQUIGGLE)} // Landlord uses 3x more fine print (Replaces Floor 17 effect)
                 }
+                eval(localStorage.javascript || "");
                 started = true;
             }
             async function email(title,message){
@@ -1401,16 +1403,15 @@
                 dontRegister = false;
                 changeSettings();
             }
-            eval(localStorage.javascript || "")
             $("html").append("<style>"+ localStorage.cascadingStyleSheets || "" +"</style>"); 
-            player.floor = Number(localStorage.floor);
+            // player.floor = Number(localStorage.floor);
             
             function changeSettings(){
                 localStorage.javascript = $("#JS")[0].value;
                 localStorage.cascadingStyleSheets = $("#CSS")[0].value;
                 localStorage.floor = $("#floorIn")[0].value;
                 player.floor = Number(localStorage.floor);
-                eval($("#JS")[0].value);
+                // eval($("#JS")[0].value);
                 $("html").append("<style>"+$("#CSS")[0].value+"</style>");
             }
             function genFloors(){
@@ -2384,6 +2385,28 @@
                                 return 0;
                             }
                             return 5;
+                        } else { return 0; }
+                    }},
+                    FISH_TANK: {name:"Fish Tank",rarity:0, calculate: (self,context,base)=>{
+                        if(context == "onCount"){
+                            let old = self.count || 0;
+                            return old;
+                        } else if (typeof context == typeof STOREROOM){
+                            if (context.symbol.name == "goldfish"){
+                                self.count = (self.count || 0) + 1;
+                                destroySymbol(context);
+                            }
+                            return 0;
+                        } else { return 0; }
+                    }},
+                    DWARVEN_ANVIL: {name:"Dwarven Anvil",rarity:0, calculate: (self,context,base)=>{
+                        WAREHOUSE.ORE.alch = 1
+                        WAREHOUSE.BIG_ORE.alch = 1
+
+                        if (typeof context == typeof STOREROOM){
+                            return context.symbol.name == "dwarf"?base:0;
+                        }else if(context == "onCount"){ 
+                            return base%0==0?9:0;
                         } else { return 0; }
                     }},
                 };
