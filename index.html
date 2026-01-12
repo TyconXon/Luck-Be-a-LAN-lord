@@ -1,2418 +1,2479 @@
 <html>
-    <head>
-        <title>Luck be a LANdlord</title>
+	<head>
+		<title>Luck be a LANdlord</title>
 		<link rel="icon" href="assets/sprites/coin.png">
-        <script src="js/jquery.js"></script>
-        <script src="js/jquery-ui.js"></script>
-        <script src="js/underscore.js"></script>
+		<script src="js/jquery.js"></script>
+		<script src="js/jquery-ui.js"></script>
+		<script src="js/underscore.js"></script>
+		<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js"></script>
 		<!-- <link rel="stylesheet" href="https://raw.githubusercontent.com/jquery/jquery-ui/refs/heads/main/themes/base/all.css"/> -->
 
-        <style>
-            @font-face {
-                font-family: 'sinsgold'; /* A name you choose for your font */
-                src: url('assets/fonts/SinsGold-MOD.ttf');
-            }
-            html{
-                background-color: dimgray;
-                /* font-family: "sinsgold"; */
-                -webkit-text-stroke: 0.2em rgba(0,0,0,1);
-                paint-order: stroke fill;
-                color:white;
-                image-rendering: pixelated;
-                cursor: url("assets/cursor/cursor_00.png"), auto;
-
-            }
-            textarea, select, input{
-                -webkit-text-stroke: 0em rgba(0,0,0,1);
-                vertical-align:middle;
-            }
-            label{
-                vertical-align:middle;
-            }
-
-            #machine{
-                display:grid;
-                grid-template-columns: repeat(5, 1fr); /* Creates 2 equal-width columns */
-                gap: 2px; /* Adds space between grid items */
-                width: 25%;
-                margin:auto;
-            }
-            
-            .slot{
-                background-color: red;
-                text-align: center;
-                vertical-align: middle;
-                line-height: 15px;
-                
-                display: inline-block;
-                aspect-ratio: 1/1;
-                width: 55px;
-                height: 55px;
-                /* white-space: wrap; */
-                /* text-overflow: clip; */
-                border: 2px black solid;
-            }
-            .slot *{
-                image-rendering: pixelated;
-                position: relative;
-                top: 50%;
-                transform: translateY(-50%); /* Moves the element up by half its own height */
-                width: 75%;
-                margin: auto;
-            }
-            button{
-                display:block;
-                width: 300px;
-                margin: auto;
-                margin-top: 1%;
-                color:white;
-                -webkit-text-stroke: 0.15em rgba(0,0,0,1);
-                cursor: url("assets/cursor/cursor_10.png"), hand;
-
-            }
-            h1{
-                text-align:center;
-            }
-
-            .overhead{
-                width:20%;margin:auto;text-align:center;font-size: 30px;background-color:white;
-                border:black 3px solid;
-            }
-            #inv{
-                width: 80%;margin:auto;text-align:center;
-            }
-            #stats, #currencies{
-                width: 80%;margin:auto;text-align:center;
-            }
-            #percentage{
-                font-size: 50%;
-            }
-
-            #satisfaction{
-                color: white;
-                transform-style: preserve-3d;
-                /* transition: top 0.1s, left 0.1s; */
-                /* padding: 5px; */
-                height: fit-content;
-                padding-top: 0px;
-                margin: auto;
-                font-size: 20px;
-                transform: rotate(calc(0deg - var(--degree) ));
-                text-align: center;
-                padding: 3px;
-                scale: calc(1 / var(--scale) );
-            }
-            #satisfactionWrapper{
-                background-color: var(--blue);
-                /* border: 3px solid white; */
-                position: absolute;
-                display: inline-block;
-                pointer-events: none;
-                z-index: 99999;
-                margin: none;
-                /* block-size: 5px; */
-                /* aspect-ratio: 1/1; */
-                padding: 5px;
-                scale: var(--scale);
-                
-                --degree : 0deg;
-                --scale : 2;
-                transform: rotate(var(--degree));
-
-                filter: drop-shadow(8px 8px 0px rgba(0,0,0,0.5));
-                
-            }
-
-            .softShake {
-                animation: softShake 0.5s ease;
-            }
-            @keyframes softShake {
-                0% { transform: translate(0.5px, -0.5px) rotate(0.1deg); }
-                30% { transform: translate(-0.5px, 0.5px) rotate(-0.1deg); }
-                60% { transform: translate(-0.5px, 0.5px) rotate(0.1deg); }
-                100% { transform: translate(0,0) rotate(0deg); } 
-
-                0%{
-                    scale: 0.99;
-                }
-                100%{
-                    scale: 1;
-                }
-            }
-
-            #mailInterface {
-                width: 50%;
-                height: 75%;
-                margin: auto;
-                background: navy; 
-                filter: drop-shadow(8px 8px 0px rgba(0,0,0,0.5));
-
-            }
-            #mailInterface h2{
-                background-color: dimgray;
-                margin-top: 0px;
-                margin-bottom:5px;
-                text-align:center;
-                color:lightgrey;  
-                filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.5));
-
-            }
-            #mailInterface button{
-                width:15%;
-                /* height:25px; */
-                color:white; border:solid 3px black;
-                font-size: 100%;
-                box-shadow: 3px 3px 0px black;
-                display: inline-block;
-                float:right;
-                margin:5px;
-            }
-            #skipButton{
-                background-color:orange;
-            }
-            #rerollButton{
-                background-color:green;
-            }
-            #mailInterface button:hover{
-                outline: 3px white solid;
-            }
-            #mailInterface button:active, .symbolGetButton:active{
-                border-color:white;
-                -webkit-text-stroke: 0.15em rgba(0,0,0,0);
-                background-color: rgba(255,255,255,0.5);
-            }
-
-            #symbolChoiceContainer {
-                width: 100%;
-                display: flex;
-                /* display:none; */
-                flex-direction: row;
-                gap: 5px;
-                margin-top: 10px;
-            }
-            .symbolGetButton {
-                flex-grow: 1;
-                border: black 2px solid;
-                color: white;
-                text-align:center;
-                padding:1%;
-                /* text-shadow: 1px 1px 0px black, 1px -1px 0px black, -1px -1px 0px black, -1px 1px 0px black; */
-                filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.5));
-                transition: all 0.1s;
-                width:0; /*Fixes the width */
-            }
-            .symbolGetButton:hover{
-                outline: white 3px solid;
-                cursor: url("assets/cursor/cursor_10.png"), hand;
-                /* -webkit-text-stroke: 0.15em rgba(0,0,0,0); */
-            }
-            button:disabled{
-                text-decoration: line-through;
-                opacity:0.5;
-            }
-            sp{
-                color:red;
-            }
-            c{
-                color:yellow;
-            }
-            address{
-                color:grey;
-            }
-            c::before {
-                content: "";
-                /* You may need to adjust size and positioning using other CSS properties */
-
-                background-image: url('assets/sprites/coin.png');
-                aspect-ratio: 1/1;
-                margin:2px;
-                background-size: contain; /* Adjust as needed */
-                vertical-align: middle;
-                background-position: center center; /* Adjust as needed */
-                display: inline-block; /* Or inline-block, depending on layout */
-                height: 1em; 
-                
-            }
-
-            .symbolGetButton img {
-                width: 40%;
-                margin: auto;
-                aspect-ratio: 1/1;
-                image-rendering: pixelated;
-                /* border: 2.5px black solid; */
-                /* padding: 5px; */
-            }
-            .symbolName{
-                font-size:25px;
-            }
-            [inventory]{
-                transition: 0.15s all ease;
-                cursor: url("assets/cursor/cursor_09.png"), auto;
-            }
-            [inventory]:hover{
-                scale:2.15;
-                filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.5));   
-            }
-            #mailText{
-                /* margin:20px; */
-            }
-        </style>
-
-        <script>
-            function snapped(value, increment) {
-                return Math.round(value / increment) * increment;
-            }
-
-            const genRanHex = size => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-            Number.prototype.clamp = function(min, max) {
-                return Math.min(Math.max(this, min), max); 
-            };
-            function getAdjacent(a, x, y, r) {
-                var minX = Math.max(x - r, 0),
-                    maxX = Math.min(x + r, a[0].length - 1),
-                    minY = Math.max(y - r, 0),
-                    maxY = Math.min(y + r, a.length - 1),
-                    xx, yy,
-                    result = [];
-
-                for (yy = minY; yy <= maxY; yy++) {
-                    for (xx = minX; xx <= maxX; xx++) {
-                        if (x !== xx || y !== yy) {
-                            result.push(a[yy][xx]);
-                        }
-                    }
-                }
-                return result;
-            }
-
-            function shake() {
-                $("html").removeClass("softShake");
-                document.querySelector("html").offsetHeight;
-                $("html").addClass("softShake");
-            }
-
-            function loadLocalSprite(data) {
-                var spr = new Image();
-                spr.src = data;
-                return spr;
-            }
-            function loadLocalAudio(data) {
-                var snd = new Audio(data);
-                document.body.appendChild(snd);
-                return snd;
-            }
-
-            function playSound(snd) {
-                snd.currentTime = 0;
-                snd.play();
-            }
-            function pretty(str) {
-                if (typeof str !== 'string' || str.length === 0) {
-                    return str; // Handle empty or non-string inputs
-                }
-                return str.charAt(0).toUpperCase() + str.slice(1);
-            }
-
-            function getOffset(el) {
-                const rect = el.getBoundingClientRect();
-                return {
-                    left: rect.left + window.scrollX,
-                    top: rect.top + window.scrollY
-                };
-            }
-
-            // Source - https://stackoverflow.com/a
-            // Posted by KevynTD, modified by community. See post 'Timeline' for change history
-            // Retrieved 2025-12-05, License - CC BY-SA 4.0
-
-            function waitListener(element, listenerName) {
-                return new Promise(function (resolve, reject) {
-                    var listener = event => {
-                        element.removeEventListener(listenerName, listener);
-                        resolve(event);
-                    };
-                    element.addEventListener(listenerName, listener);
-                });
-            }
-
-
-            function calculateAverage(arr) {
-                if (arr.length === 0) {
-                    return 0; // Handle empty array case to avoid division by zero
-                }
-                const sum = arr.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-                return sum / arr.length;
-            }
-
-            //Values = String[], Weights = Int[];
-            function randomByWeight(values, weights) {
-                let total = 0
-            
-                // Sum total of weights
-                weights.forEach(weight => {
-                    total += weight
-                })
-            
-                // Random a number between [1, total]
-                const random = Math.random() * total // [0,total]
-            
-                // Seek cursor to find which area the random is in
-                let cursor = 0
-                for (let i = 0; i < weights.length; i++) {
-                    cursor += weights[i]
-                    if (cursor >= random) {
-                        return values[i]
-                    }
-                }
-                return "never go here"
-            }
-
-
-            
-            // Version 4.0
-            const pSBC = (p, c0, c1, l) => {
-                let r, g, b, P, f, t, h, i = parseInt, m = Math.round, a = typeof (c1) == "string";
-                if (typeof (p) != "number" || p < -1 || p > 1 || typeof (c0) != "string" || (c0[0] != 'r' && c0[0] != '#') || (c1 && !a)) return null;
-                if (!this.pSBCr) this.pSBCr = (d) => {
-                    let n = d.length, x = {};
-                    if (n > 9) {
-                        [r, g, b, a] = d = d.split(","), n = d.length;
-                        if (n < 3 || n > 4) return null;
-                        x.r = i(r[3] == "a" ? r.slice(5) : r.slice(4)), x.g = i(g), x.b = i(b), x.a = a ? parseFloat(a) : -1
-                    } else {
-                        if (n == 8 || n == 6 || n < 4) return null;
-                        if (n < 6) d = "#" + d[1] + d[1] + d[2] + d[2] + d[3] + d[3] + (n > 4 ? d[4] + d[4] : "");
-                        d = i(d.slice(1), 16);
-                        if (n == 9 || n == 5) x.r = d >> 24 & 255, x.g = d >> 16 & 255, x.b = d >> 8 & 255, x.a = m((d & 255) / 0.255) / 1000;
-                        else x.r = d >> 16, x.g = d >> 8 & 255, x.b = d & 255, x.a = -1
-                    } return x
-                };
-                h = c0.length > 9, h = a ? c1.length > 9 ? true : c1 == "c" ? !h : false : h, f = this.pSBCr(c0), P = p < 0, t = c1 && c1 != "c" ? this.pSBCr(c1) : P ? { r: 0, g: 0, b: 0, a: -1 } : { r: 255, g: 255, b: 255, a: -1 }, p = P ? p * -1 : p, P = 1 - p;
-                if (!f || !t) return null;
-                if (l) r = m(P * f.r + p * t.r), g = m(P * f.g + p * t.g), b = m(P * f.b + p * t.b);
-                else r = m((P * f.r ** 2 + p * t.r ** 2) ** 0.5), g = m((P * f.g ** 2 + p * t.g ** 2) ** 0.5), b = m((P * f.b ** 2 + p * t.b ** 2) ** 0.5);
-                a = f.a, t = t.a, f = a >= 0 || t >= 0, a = f ? a < 0 ? t : t < 0 ? a : a * P + t * p : 0;
-                if (h) return "rgb" + (f ? "a(" : "(") + r + "," + g + "," + b + (f ? "," + m(a * 1000) / 1000 : "") + ")";
-                else return "#" + (4294967296 + r * 16777216 + g * 65536 + b * 256 + (f ? m(a * 255) : 0)).toString(16).slice(1, f ? undefined : -2)
-            }
-
-            async function satisfactionTextUpdate(text, element, color) {
-                try {
-                    satisfyingElement.innerText = text;
-                    satisfyingWrapper.style.backgroundColor = `${color}`;
-                    // console.log(JSON.stringify(element.style))
-                    let toLeft = getOffset(element).left + (Number(55) / 4)
-                    let toRight = getOffset(element).top + (Number(55) / 4)
-
-                    $(element).css({ scale: 1.25 });
-                    $(element).animate({ scale: 1 }, { duration: 250, queue: false });
-
-                    $(satisfyingWrapper).css({ left: toLeft + "px", top: toRight + "px", opacity: 0.1, apple: 0.1, "--scale": 0.1 });
-                    // satisfyingWrapper.style.setProperty("--degree", `${45 * Math.ceil(Math.random()*8)}deg`)
-                    $(satisfyingWrapper).animate({ opacity: 1, apple: 1 }, {
-                        duration: 200, step: () => {
-                            satisfyingWrapper.style.setProperty("--scale", satisfyingWrapper.style.opacity);
-                        }
-                    });
-
-                    // shake()
-
-                } catch (error) {
-                    //Ignoring errors for now, jokers error this seemingly randomly...
-                    console.log("STU " + error)
-                }
-
-            }
-
-
-            const delay = (delayInms) => {
-                return new Promise(resolve => setTimeout(resolve, speed?0:delayInms));
-            };
-
-            function Rentercent(value){
-                return Math.floor(100*(value/rentPrice[player["payments"]]))
-            }
-
-        </script>
-
-        
-    </head>
-    <body>
-        <script src="js/myConsole.js"></script>
-
-        <h1 id="title">Luck be a LANdlord</h1>
-        <div class="overhead">
-            <span>Coins: <span id="coins">00</span> <span id="percentage">(%)</span></span>
-            <br>
-            <span><span id="time">?</span></span>
-        </div>
-        <br>
-        <div id="machine">
-            
-        </div>
-        <button id="lever">SPIN</button>
-		<wrapper id="satisfactionWrapper"><p id="satisfaction">+2</p></wrapper>
-        <br>
-        <p id="stats">%%%</p>
-        <p id="currencies">###</p>
-        <p id="inv">###</p>
-        <button id="remove" style="display:none;">Remove a symbol</button>
-        <button id="welcome">Welcome / Settings</button>
-<!--  -->
-        <div popover="manual" id="mailInterface" open>
-            <h2 id="reminder">25 due in 5 spins </h2>
-            <h2 id="mailTitle">INBOX</h2>
-            <div id="skipContainer">
-                <span id="payments" style="color:white">Payments: 0/12</span>
-                <button id="skipButton">Skip</button>
-                <button id="rerollButton">Reroll</button>
-            </div>
-            <div id="symbolChoiceContainer" >
-                <div class="symbolGetButton" id="symbolGetButton1">
-                    <div>
-                        <p class="symbolName">Crow</p>
-                        <img src="assets/sprites/crow.png">
-                        <p class="symbolRarity">Common</p>
-                    </div>
-                </div>
-                <div class="symbolGetButton" id="symbolGetButton2">
-                    <div>
-                        <p class="symbolName">Apple</p>
-                        <img src="assets/sprites/apple.png">
-                        <p class="symbolRarity">Rare</p>
-                    </div>
-                </div>
-                <div class="symbolGetButton" id="symbolGetButton3">
-                    <div>
-                        <p class="symbolName">Big Ore</p>
-                        <img src="assets/sprites/big_ore.png">
-                        <p class="symbolRarity">Uncommon</p>
-                    </div>
-                </div>
-                
-                <!-- generate other items under here -->
-            </div>
-            <div id="mailContents" hidden>
-                <p id="mailText" style="color:white">Hello, your rent payment is due.</p>
-                <button id="ok">Ok</button>
-                <br><br><br>
-            </div>
-        </div >
-        
-<!--  -->
-
-        <script>
-            // $("#mailInterface")[0].showPopover();
-
-            const slots = [
-                [],
-                [],
-                [],
-                []
-            ];
-            
-            const rentSpins = [5,5,6,6,7,7,8,8,9,9,10,10,10];
-            const rentPrice = [25,50,100,150,225,300,350,425,575,625,675,777,1000];
-            var g_reroll = 2;
-            var g_removal = 2;
-            var g_essence = 2;
-            var g_duds = 0;
-            
-            const satisfyingWrapper = document.getElementById('satisfactionWrapper');
-            const satisfyingElement = document.getElementById('satisfaction');
-
-            function imgify(symbol){
-                if(symbol.image) return symbol.image;
-                return `assets/sprites/${symbol.name.replaceAll(" ","_").toLowerCase()}.png`
-            }
-            function setSlot(x,y,a){
-                a.e = $(`#s${x}x${y}y`)
-                a.e.html(`<img src="${imgify(a.symbol)}">`);
-                a.e.css({"background-color":a.symbol.name == "empty"?"gray":"red", "opacity": "1.0"})
-                // console.log(x,y)
-                a.x = x;
-                a.y = y;
-                slots[x][y] = a
-                a.finalOutput = 0;
-                a.bonuses = [];
-                a.tags = [];
-                return slots[x][y];
-            }
-            function adjacentSlots(x,y){
-                let adjacents = getAdjacent(slots,x,y,1);
-                return adjacents;           
-            }
-
-            async function eat(food, self){
-                let counting = 0;
-                for (element of adjacentSlots(self.y, self.x)){
-                    element.tags = element.tags || [];
-                    if (element.symbol.name == food && !element.tags.includes(self.id) ) {
-                        element.tags.push(self.id);
-                        counting += 1;
-                        element.e.css("opacity", "1.0");
-                        element.e.css("outline", "white 2px solid");
-                        await delay(500);
-                        element.e.css("opacity", "0.25");
-                        await delay(500);
-                        element.e.css("outline", "none");
-                        destroySymbol(element)
-
-                    }
-                };
-                return counting;
-            }
-            async function eatType(type, self){
-                let counting = 0;
-                for (element of adjacentSlots(self.y, self.x)){
-                    element.tags = element.tags || [];
-                    if (element.symbol[type] > 0 && !element.tags.includes(self.id) ) {
-                        element.tags.push(self.id);
-                        counting += element.symbol[type];
-                        element.e.css("opacity", "1.0");
-                        element.e.css("outline", "white 2px solid");
-                        await delay(500);
-                        element.e.css("opacity", "0.25");
-                        await delay(500);
-                        element.e.css("outline", "none");
-                        destroySymbol(element)
-
-                    }
-                };
-                return counting;
-            }  //TODO ww 
-            async function bonus(food, self, bonussy){
-                let counting = 0;
-                for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol.name == food && !element.tags.includes(self.id) ) {
-                        counting += 1;
-                        element.bonuses.push(bonussy);
-                        // element.e.text(food);
-                        element.e.css("outline", "white 2px solid");
-                        await delay(500);
-                        element.e.css("outline", "none");
-                        element.tags.push(self.id)
-                    }
-                };
-                return counting;
-            }
-            async function bonusType(food, self, bonussy){
-                let counting = 0;
-                for (element of adjacentSlots(self.y, self.x)){
-                    if (element.symbol[food] && !element.tags.includes(self.id) ) {
-                        counting += 1;
-                        element.bonuses.push(bonussy);
-                        // element.e.text(food);
-                        element.e.css("outline", "white 2px solid");
-                        await delay(500);
-                        element.e.css("outline", "none");
-                        element.tags.push(self.id)
-                    }
-                };
-                return counting;
-            }
-            async function giveBonus(element, self, bonussy, del = 500){
-                if (!element.tags.includes(self.id) ) {
-                    element.bonuses.push(bonussy);
-                    element.e.css("outline", "white 2px solid");
-                    await delay(del);
-                    element.e.css("outline", "none");
-                    element.tags.push(self.id)
-                }
-                return;
-            }
-            var queuedAdditions = [];
-            var queuedDeletions = [];
-            var deletionHistory = [];
-            function addSymbol(symbol){
-                let s = new SymbolInstance(symbol);
-                if(symbol != WAREHOUSE.EMPTY){
-                    queuedAdditions.push(player.inventory[player.inventory.push(s)-1]);
-                }else{
-                    player.inventory[player.inventory.push(s)-1]
-                }
-                for (const item of player.items) {
-                    item.calculate(item, "onAdded", symbol);
-                }
-
-                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
-                if (nonNothings.length < 20){
-                    player.inventory.forEach((element)=>{
-                        if(element.symbol.name == "empty" && player.inventory.length - nonNothings.length > 20 - nonNothings.length){
-                            player.inventory = _.without(player.inventory, element);
-                        }
-                    });
-                    // console.log(player.inventory.length - nonNothings.length, nonNothings.length)
-                }else{
-                    player.inventory = nonNothings;
-                }
-                updInventory()
-                return s;
-            };
-            function destroySymbol(symbolInstance){
-                player.inventory = _.without(player.inventory, symbolInstance);
-                queuedDeletions.push(symbolInstance);
-                deletionHistory.push(symbolInstance);
-                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
-                if(nonNothings.length < 20){
-                    addSymbol(WAREHOUSE.EMPTY);
-                }
-                let doDestroy = 0;
-                if(symbolInstance.symbol.onDestroy) doDestroy = symbolInstance.symbol.onDestroy(symbolInstance) || 0
-                player.coins += doDestroy;
-                for (const item of player.items) {
-                    item.calculate(item, "onDestroy", doDestroy);
-                }
-                updInventory()
-                return doDestroy
-            }
-            function removeSymbol(symbolName){
-                try {
-                    player.inventory = _.without(player.inventory, player.inventory.filter((a)=>{return a.symbol.name == symbolName})[0] );
-                    let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
-                    if(nonNothings.length < 20){
-                        addSymbol(WAREHOUSE.EMPTY);
-                    }
-                    updInventory()
-                    player.removals--;
-                    return
-                } catch (error) {
-                    alert(`Failed to remove ${symbolName}! ${error}`);
-                }
-                
-            }
-            function addItem(item){
-                player.items.push(item);
-                for (const litem of player.items) {
-                    litem.calculate(item, "onAddedItem", item);
-                }
-                updInventory()
-                return item;
-            };
-
-            function updInventory(){
-                let myInv = [];
-                let myItems = [];
-                let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
-                _.each(filterdInv, (value)=>{
-                    let avg = Math.floor(10*calculateAverage(value["history"]))/10;
-                    myInv.push(`<img inventory onclick="rID(${value.id})" title="${pretty(value.symbol.name)} 🪙${value.symbol.base || "?"}, x̄${avg}" src="${imgify(value.symbol)}">`)
-                });
-                _.each(player.items, (value)=>{
-                    myItems.push(value.name)
-                });
-                $("#inv").html(`Items: ${myItems.join(", ")} <br>
-                    Symbols: ${filterdInv.length} <br> 
-                    ${myInv.join(", ")}
-                `);
-            }
-            function rID(vID){
-                if(player.removals < 1) return;
-                if(!confirm("Delete this?")) return;
-                player.inventory = _.without(player.inventory, player.inventory.filter((a)=>{return a.id == vID})[0] );
-                let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
-                if(nonNothings.length < 20){
-                    addSymbol(WAREHOUSE.EMPTY);
-                }
-                updInventory()
-                player.removals--;
-            }
-
-            const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6, "dead":-1};
-            
-
-            const _player = {
-                inventory : [],
-                items : [],
-
-                status : STATES.idle,
-
-                coins : 1,
-                rerolls : 0,
-                removals : 0,
-                tokens : 0,
-
-                payments : 0,
-                floor: 1,
-                spins : rentSpins[0],
-                last: 0,
-                history: [],
-            }
-
-            const Playerhandler = {
-                get: function(target, prop) {
-                    // console.log(`Getting property: ${prop}`);
-                    return target[prop];
-                },
-                set: function(target, prop, value) {
-                    // console.log(`Setting property: ${prop} to ${value}`);
-                    switch (prop) {
-                        case "coins":
-                            target[prop] = value;
-                            
-                            $("#coins").text(target[prop])
-                            $("#percentage").text(`(${Rentercent(value)}%)`);
-                            $("#coins").css("color", rentPrice[target["payments"]]>value?`rgb(25,25,${(Rentercent(value)/100)*255})`:"lime");
-                            if(rentPrice[target["payments"]]<=value){
-                                $("html").css("cursor",`url("assets/cursor/cursor_01.png"), auto`)
-                            }else if(target["payments"] >= 6){
-                                $("html").css("cursor",`url("assets/cursor/cursor_02.png"), auto`)
-                            }else{
-                                $("html").css("cursor",`url("assets/cursor/cursor_00.png"), auto`)
-                            }
-                
-                            break;
-                        case "status":
-                            target[prop] = value;
-                            $("#lever").prop("disabled", value != STATES.idle);
-                            $("#welcome").prop("disabled", value != STATES.idle);
-                            $("#remove").prop("disabled", value != STATES.idle || target["removals"] <= 0);
-
-                            break;
-                        case "spins":
-                            target[prop] = Math.max(0,value);
-                            $("#time").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
-                            $("#reminder").html(`<c>${rentPrice[target["payments"]]}</c> due in <sp>${target[prop]}</sp> spins`)
-                            break;
-                        case "payments":
-                            target[prop] = value;
-                            $("#payments").text(`${value}/12 Payments`);
-                            break;
-                        case "last":
-                            let last = target[prop];
-                            target[prop] = value;
-                            let avg = Math.floor(10*calculateAverage(target["history"]))/10;
-                            $("#stats").html(`↱${value} (${Rentercent(value)}%) | Δ${value-last} (${Math.floor(100*value/last)}%) | x̄${avg} (<ruby>${ Math.ceil(rentPrice[target["payments"]]/avg) } - ${Math.abs(target["spins"]-rentSpins[target["payments"]])}<rt>${Rentercent(avg)}%</rt></ruby>)`)
-                            $("#stats").css("color",value>last?"lime":value==last?"white":"crimson")
-                            break;
-                        case "rerolls":
-                        case "removals":
-                        case "tokens":
-                            target[prop] = value;
-                            $("#currencies").html(`⚄${target["rerolls"]} ⭙${target["removals"]} ℇ${target["tokens"]}`);
-                            $("#remove").prop("disabled", target["status"] != STATES.idle || target["removals"] <= 0);
-                            break;
-                        default:
-                            target[prop] = value;
-                            break;
-                    }
-                    return true; // Indicate success
-                }
-            };
-
-            const player = new Proxy(_player, Playerhandler);
-            player.rerolls = 0;
-
-            
-            
-
-            class SymbolInstance {
-                static allIds = 1;
-                constructor(symbol) {
-                    this.symbol = symbol;
-                    this.id = SymbolInstance.allIds++;
-                    this.tags = [];
-                    this.bonuses = [];
-                    this.history = [];
-                }
-
-                async calculate(stage = "execute") {
-                    let overallOutput = 0;
-                    let normal = 0;
-                    switch (stage) {
-                        case "calculate":
-                            normal = this.symbol.calculate?await this.symbol.calculate(this):0;
-                            overallOutput += normal;
-                            break;
-                        case "calculateLater":
-                            normal = this.symbol.calculateLater?await this.symbol.calculateLater(this):0;
-                            overallOutput += normal;
-                            break;
-                        case "execute":
-                            let itemMod = 0;
-                            let base = this.symbol.base || 0;
-                            base += this.symbol.execute?await this.symbol.execute(this):0;
-                            player.items.forEach(item => {
-                                itemMod += item.calculate(item, this, base);
-                            });
-                            overallOutput += itemMod + base;
-                    
-                        default:
-                            break;
-                    }
-                     
-                    return overallOutput;
-                }
-            }
-
-            var started = false;
-            async function init(){
-                _.times(20, (n)=>{
-                    let x = Math.floor(n/5);
-                    let y = n%5;
-                    let currentSlot = $(`<div class="slot" id="s${x}x${y}y"></div>`);
-                    $("#machine").append(currentSlot);
-                    addSymbol(WAREHOUSE.EMPTY);
-                    setSlot(x, y, player.inventory[player.inventory.length - 1]);
-                });
-                // _.each(WAREHOUSE,(n)=>{addSymbol(n);});
-                setSlot(1,0,addSymbol(WAREHOUSE.CAT))
-                setSlot(2,1,addSymbol(WAREHOUSE.CHERRY));
-                setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
-                setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
-                setSlot(1,4,addSymbol(WAREHOUSE.COIN));
-                satisfyingWrapper.style.display = 'none';
-
-                // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
-                // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
-                // setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
-
-
-                // player.items.push(STOREROOM.BLACK_CAT);
-                await welcome();
-                if ( player.floor >= 2 ){
-                    rentPrice[6] += 25;
-                    if ( player.floor >= 3 ) rentPrice[7] += 25;
-                    if ( player.floot >= 4 ) g_removal = 1;
-                    if ( player.floor >= 5 ) setSlot(3,2,addSymbol(WAREHOUSE.DUD));
-                    if ( player.floor >= 6 ) rentPrice[9] += 25;
-                    if ( player.floor >= 7 ) addSymbol(WAREHOUSE.DUD);
-                    if ( player.floor >= 8 ) rentPrice[10] += 25;
-                    if ( player.floor >= 9 ) g_reroll = 1;
-                    if ( player.floor >= 10) g_duds = 25;
-                    if ( player.floor >= 11) {addSymbol(WAREHOUSE.DUD)} // Landlord has 250 more HP
-                    if ( player.floor >= 12) addSymbol(WAREHOUSE.DUD);
-                    if ( player.floor >= 13) {addSymbol(WAREHOUSE.DUD)} // Landlord has 750 more HP (Replaces Floor 11 effect)
-                    if ( player.floor >= 14) g_duds = 20;
-                    if ( player.floor >= 15) {addSymbol(WAREHOUSE.DUD)} // Landlord uses more challenging fine print
-                    if ( player.floor >= 16) g_essence = 1;
-                    if ( player.floor >= 17) {addSymbol(WAREHOUSE.DUD)} // Landlord uses 2x more fine print
-                    if ( player.floor >= 18) rentPrice[9] += 25
-                    if ( player.floor >= 19) g_duds = 15;
-                    if ( player.floor >= 20) {addSymbol(WAREHOUSE.SQUIGGLE)} // Landlord uses 3x more fine print (Replaces Floor 17 effect)
-                }
-                eval(localStorage.javascript || "");
-                started = true;
-            }
-            async function email(title,message){
-                player.status = STATES.reading;
-                $("#mailTitle").html(title);
-                $("#symbolChoiceContainer").css("display","none");
-                $("#mailContents")[0].hidden = false;
-                
-                $("#mailText").html(message);
-                $("#rerollButton")[0].disabled = true;
-                $("#skipButton")[0].disabled = true;
-                
-
-                $("#mailInterface")[0].showPopover();
-                await waitListener($("#ok")[0], "click");
-                $("#mailInterface")[0].hidePopover();
-                $("#symbolChoiceContainer").css("display","flex");
-                $("#mailContents")[0].hidden = true;
-                $("#skipButton")[0].disabled = false;
-                player.status = STATES.idle;
-            }
-            
-            async function spin(){
-                if (player.status != STATES.idle) return;
-                // await email("a","b");
-                // await email("d","c");
-
-                player.spins -= 1;
-                player.coins -= 1;
-                if ( player.coins < 0 ){
-                    // await email("Your landlord.","You don't have enough money to spin and you've been evicted!");
-                    // return;
-                    // this funcitonality isn't even real, supposedly?
-                }
-                
-                player.status = STATES.spinning;
-                let modifiedInventory = player.inventory;
-                queuedAdditions = [];
-                queuedDeletions = [];
-                let x,y;
-                for (let n = 0; n < 20; n++) {
-                    let chosen = _.sample(modifiedInventory);
-
-                    $(`#s${x}x${y}y`).css("scale", "1");
-                    x = Math.floor(n/5);
-                    y = n%5;
-                    $(`#s${x}x${y}y`).css("scale", "1.1");
-                    setSlot(x,y, chosen);
-                    
-                    modifiedInventory = _.without(modifiedInventory, chosen);
-                    await delay(20);
-                    
-                }
-                $(`#s${x}x${y}y`).css("scale", "1");
-
-
-                player.status = STATES.counting;
-                let predictedCoins = 0;
-                let collective = [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]];
-                let countedNumbers = [];
-                let countedIDs = [];
-                let iterationCounted = {};
-                let iteration = 0;
-
-                for (const item of player.items) {
-                    let itemMod = item.calculate(item, "beforeCount", predictedCoins);
-                    predictedCoins += itemMod;
-                    player.coins += itemMod;
-                    if(itemMod != 0) {
-                        satisfyingWrapper.style.display = 'inline-block';
-                        await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#inv")[0], `rgba(${itemMod*25},255,0,0.75)`);
-                        await delay(500);
-                    }
-                }
-                try {
-                    
-                    let empties = false;
-                    //before hand calculations
-                do{
-                    empties = false;
-                    //Attempt to resolve queue
-                    for (const rows of slots) {
-                        for (const slot of rows) {
-                            //deletions
-                            if (queuedDeletions.length > 0){
-
-                                for (let index = queuedDeletions.length - 1; index >= 0 ; index--) {
-                                    const queueCanidate = queuedDeletions[index];
-                                    if (queueCanidate == slot){
-                                        let tempoEmpty =  new SymbolInstance(WAREHOUSE.EMPTY);
-                                        tempoEmpty.finalOutput = 0;
-                                        queueCanidate.e.css({"outline":"red 5px dotted","opacity":"0.25"});
-                                        await delay(350);
-                                        queueCanidate.e.css({"outline":"none","opacity":"1"});
-                                        // collective[slot.x][slot.y] += slot.finalOutput; //I don't think this is OG game behaviour?
-                                        collective[slot.x][slot.y] += slot.symbol.onDestroy?slot.symbol.onDestroy(slot):0;
-                                        setSlot(queueCanidate.x, queueCanidate.y, tempoEmpty);
-                                        
-                                        queuedDeletions = _.without(queuedDeletions, queueCanidate);
-                                    }
-                                }
-                            }
-                            //additions
-                            if (slot.symbol == WAREHOUSE.EMPTY && queuedAdditions.length > 0){
-                                slot.e.css({"outline":"green 5px dotted","opacity":"0.25"});
-                                setSlot(slot.x, slot.y, queuedAdditions[0]);
-                                await delay(350);
-                                slot.e.css({"outline":"none","opacity":"1"});
-                                queuedAdditions.shift();
-                                iteration++;
-                            }
-                            if(slot.symbol == WAREHOUSE.EMPTY){
-                                empties = true;
-                            }
-                        }
-                    }
-                    //Run calculations
-                    for (const rows of slots) {
-                        for (const slot of rows) {
-                            if (!slot.symbol.skip && iterationCounted[slot.id] != iteration){
-                                slot.e.css({"outline":"black 3px solid"});
-                                let output = await slot.calculate("calculate");
-                                slot.e.css({"outline":"none"});
-                                // slot.finalOutput += output;
-                                iterationCounted[slot.id] = iteration
-                                collective[slot.x][slot.y] += output;
-                            }
-                        }
-                    }
-                    //Run single-time executions
-                    for (const rows of slots) {
-                        for (const slot of rows) {
-                            
-                            if (!countedIDs.includes(slot.id)){
-                                slot.e.css({"outline":"black 3px solid"});
-                                let output = await slot.calculate("execute");
-                                slot.e.css({"outline":"none"});
-                                slot.finalOutput += output;
-                            }
-                        }
-                    }
-                    //Handle bonuses
-                    for (const rows of slots) {
-                        for (const slot of rows) {
-                            if (true){
-                                if (slot.bonuses){
-                                    slot.bonuses.forEach((bonussy,ind) => { //Additives
-                                        // alert(bonussy)
-                                        if(typeof bonussy == typeof 32){
-                                            let output = bonussy;
-                                            slot.bonuses[ind] = 0;
-                                            slot.finalOutput += output;
-                                        }
-                                    });
-                                    slot.bonuses.forEach((bonussy,ind) => { //Multipliers
-                                        if(typeof bonussy == typeof "string"){
-                                            let multiplier = Number(bonussy.substring(1));
-                                            slot.bonuses[ind] = 0;
-                                            slot.finalOutput *= multiplier;
-                                        }
-                                    });
-                                }
-                                // collective[slot.x][slot.y] += slot.finalOutput;
-                            }
-                        }
-                    }
-                    
-                    
-                    //Run later calculations (for symbols that use finalOutput)
-                    for (const rows of slots) {
-                        for (const slot of rows) {
-                            if (!countedIDs.includes(slot.id)){
-                                let output = await slot.calculate("calculateLater");
-                                slot.finalOutput += output;
-                                collective[slot.x][slot.y] += slot.finalOutput;
-                                // if(slot.finalOutput)alert(slot.finalOutput)
-                                countedIDs.push(slot.id)
-
-                            }
-                            if(slot.symbol == WAREHOUSE.EMPTY){
-                                empties = true;
-                            }
-                        }
-                    }
-                    
-                }while((queuedAdditions.length && empties) || queuedDeletions.length)
-
-                for (const rows of slots) {
-                    for (const slot of rows) {
-                        if (collective[slot.x][slot.y]){
-                            // alert('a')
-                            let output = collective[slot.x][slot.y];
-                            // await delay(countedNumbers.includes(output)?0:100);
-                            slot.e.css({"background-color":"blue", "outline":"red 3px solid"});
-                            satisfyingWrapper.style.display = 'none';
-                            slot.e[0].title = output;
-                            slot.history.push(output);
-                            slot.e.css({"background-color":`rgb(0,${25*output},255)`, "z-index":"15"});
-                            // await delay(50);
-                            player.coins += output;
-                            predictedCoins += output; 
-                            // slot.e.html((u,l)=>{return l+"<br>+"+output});
-		                    satisfyingWrapper.style.display = 'inline-block';
-                            if(output > 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(${25*output},255,0,0.75)`);
-                            else if (output < 0) await satisfactionTextUpdate(output, slot.e[0], `rgba(255,0, 0,0.75)`);
-                            await delay(300);
-                            slot.e.css({"outline":"none", "z-index":"1"});
-                            countedNumbers.push(output);
-
-                        }
-                    }
-                }
-                let oldPredicted = predictedCoins;
-                for (const item of player.items) {
-                    let itemMod = item.calculate(item, "onCount", oldPredicted);
-                    predictedCoins += itemMod;
-                    player.coins += itemMod;
-                    if(itemMod != 0) {
-                        await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#inv")[0], `rgba(${25*itemMod},255,0,0.75)`);
-                        await delay(500);
-                    }
-                }
-                } catch (error) {
-                    alert(error)
-                }
-                player.history.push(predictedCoins)
-                player.last = predictedCoins;
-                if(g_duds != 0){
-                    if ( player.spins % g_duds == 0 ) addSymbol(WAREHOUSE.DUD);
-                }
-
-                await delay(500);
-		        satisfyingWrapper.style.display = 'none';
-
-                // Payment
-                if(player.spins == 0){
-                    await email("Your landlord.",`Hello,<br> Your rent is due, pay up.<br>Thanks,<br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>` );
-                    player.coins -= rentPrice[player.payments];
-                    if(player.coins < 0){
-                        document.write("Your rent is late and you are being evicted. GAME OVER! <br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>");
-                        return;
-                    }
-                    player.payments += 1;
-
-                    player.spins = rentSpins[player.payments]
-                    await email("Your landlord.",`Hello,<br> Your rent has increased to <c>${rentPrice[player.payments]}</c>, and is due in <sp>${player.spins} spins</sp>.<br>Good luck,<br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>`)
-                    
-                    if(player.payments >= 4 && player.payments % 2 == 0){
-                        player.rerolls += g_reroll;
-                        player.tokens += g_essence;
-                        player.removals += g_removal;
-                        await email("New Email",`Hello Comrade,<br> Your local mutual aid network has heard of your rent situation.<br> To help with your trials, we are giving you reroll tokens, essence tokens, and removal tokens to help defeat your landlord.<br>Stay strong,<br><address style="color:red">Commie_McComrade@bouncy.mail</address>`)
-                    }
-                    
-                    // player.history = [];
-                    giveItemOptions()
-
-                    
-                }else{
-                    giveOptions()
-                }
-
-            }
-            
-            function toRarity(a){
-                switch (a) {
-                    case 0:
-                        return "Common"
-                        break;
-                    case 1:
-                        return "Uncommon"
-                        break;
-                    case 2:
-                        return "Rare"
-                        break;
-                    case 3:
-                        return "Very Rare"
-                        break;
-                    default:
-                        return "Special"
-                        break;
-                }
-            }
-            function RarityToWeight(a){
-                let shinies = player.inventory.filter((a)=>{return a.symbol == WAREHOUSE.SHINY_PEBBLE}).length;
-                let tediums = player.inventory.filter((a)=>{return a.symbol == WAREHOUSE.HEX_OF_TEDIUM}).length;
-                
-                switch (a) {
-                    case 0:
-                        return 120 + (tediums * 10)
-                        break;
-                    case 1:
-                        return 5 + (player.payments * 5) + (shinies*10)
-                        break;
-                    case 2:
-                        return 3 + (player.payments * 3) + (shinies*5)
-                        break;
-                    case 3:
-                        return 1 + (player.payments * 2) + shinies
-                        break;
-                    default:
-                        return 0
-                        break;
-                }
-            }
-
-            var names = [];
-            var weights = [];
-            var options = [];
-            var rarity = 0;
-            var choosingItems = false;
-            var hexxed = 0;
-
-            function giveOptions(rrarity = 0) {
-                player.status = STATES.choosing;
-                 choosingItems = false;
-                 names = [];
-                 weights = [];
-                 options = [];
-                 rarity = rrarity
-
-                    _.each(WAREHOUSE, (value, key)=>{
-                        // alert(JSON.stringify(value));
-                        if(value.rarity > -1 && ( rarity == 0 || (rarity != 0 && value.rarity >= rarity))){
-                            names.push(key);
-                            weights.push(RarityToWeight(value.rarity));
-                        }
-                    });
-                    _.times(3, function(n) {
-                        let result = randomByWeight(names, weights);
-                        if(WAREHOUSE[result]){
-                            options.push(result);
-                        }
-                        weights.splice(names.indexOf(result),1)
-                        names.splice(names.indexOf(result),1)
-                    });
-                    
-                    $("#skipButton")[0].disabled = false;
-                    if ( hexxed == 1){
-                        email("Choose a SYMBOL..?", "You've been HEXED! Your symbols are nowhere to be found...");
-                        hexxed = 0;
-                        return;
-                    }else if ( hexxed == 2){
-                        $("#skipButton")[0].disabled = true;
-                    }
-                    $("#mailTitle").text("Choose a SYMBOL!");
-                    $("#payments").text(`${player.payments}/12 Payments |${RarityToWeight(0)}|${RarityToWeight(1)}|${RarityToWeight(2)}|${RarityToWeight(3)}|`);
-                    $(".symbolGetButton").css("backgroundColor","rgba(25,255,25,0.25)");
-
-                    $("#symbolGetButton1 .symbolName").text(pretty(WAREHOUSE[options[0]].name));
-                    $("#symbolGetButton1 img")[0].src = imgify(WAREHOUSE[options[0]]);
-                    $("#symbolGetButton1 .symbolRarity").html(`${toRarity(WAREHOUSE[options[0]].rarity)} <c>${WAREHOUSE[options[0]].base || "?"}</c>`);
-
-                    $("#symbolGetButton2 .symbolName").text(pretty(WAREHOUSE[options[1]].name));
-                    $("#symbolGetButton2 img")[0].src = imgify(WAREHOUSE[options[1]]);
-                    $("#symbolGetButton2 .symbolRarity").html(`${toRarity(WAREHOUSE[options[1]].rarity)} <c>${WAREHOUSE[options[1]].base || "?"}</c>`);
-
-                    $("#symbolGetButton3 .symbolName").text(pretty(WAREHOUSE[options[2]].name));
-                    $("#symbolGetButton3 img")[0].src = imgify(WAREHOUSE[options[2]]);
-                    $("#symbolGetButton3 .symbolRarity").html(`${toRarity(WAREHOUSE[options[2]].rarity)} <c>${WAREHOUSE[options[2]].base || "?"}</c>`);
-
-                    $("#rerollButton").text(player.rerolls);
-                    $("#rerollButton")[0].disabled = !player.rerolls;
-
-                    $("#mailInterface")[0].showPopover();
-            }
-            function giveItemOptions() {
-                player.status = STATES.choosing;
-                choosingItems = true;
-                // alert("apple")
-                names = [];
-                weights = [];
-                options = [];
-                _.each(STOREROOM, (value, key)=>{
-                    // alert(JSON.stringify(value)); ;
-                    if(value.rarity > -1 && (!player.items.includes(value) || _.filter(STOREROOM, (a)=>{return !player.items.includes(a)}).length < 3)){
-                        names.push(key);
-                        weights.push(RarityToWeight(value.rarity));
-                    }
-                });
-                _.times(3, function(n) {
-                    let result = randomByWeight(names, weights);
-                    if(STOREROOM[result]){
-                        options.push(result);
-                    }
-                    weights.splice(names.indexOf(result),1)
-                    names.splice(names.indexOf(result),1)
-                });
-                // let choice = prompt(`Add an ITEM!:\n1: ${STOREROOM[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${STOREROOM[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${STOREROOM[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip`);
-                // if(choice < 4 && STOREROOM[options[choice-1]]){
-                //     addItem(STOREROOM[options[choice-1]]);
-                // }
-                $("#mailTitle").text("Choose an ITEM!");
-                $(".symbolGetButton").css("backgroundColor","rgba(0, 255, 47, 0.4)");
-
-                $("#symbolGetButton1 .symbolName").text(pretty(STOREROOM[options[0]].name));
-                $("#symbolGetButton1 img")[0].src = imgify(STOREROOM[options[0]]);
-                $("#symbolGetButton1 .symbolRarity").text(toRarity(STOREROOM[options[0]].rarity));
-
-                $("#symbolGetButton2 .symbolName").text(pretty(STOREROOM[options[1]].name));
-                $("#symbolGetButton2 img")[0].src = imgify(STOREROOM[options[1]]);
-                $("#symbolGetButton2 .symbolRarity").text(toRarity(STOREROOM[options[1]].rarity));
-
-                $("#symbolGetButton3 .symbolName").text(pretty(STOREROOM[options[2]].name));
-                $("#symbolGetButton3 img")[0].src = imgify(STOREROOM[options[2]]);
-                $("#symbolGetButton3 .symbolRarity").text(toRarity(STOREROOM[options[2]].rarity));
-
-                $("#rerollButton")[0].disabled = true;
-                $("#mailInterface")[0].showPopover();
-            }
-            function choose(choice) {
-                if(player.status != STATES.choosing) return;
-                
-                if(choosingItems){
-                    if(choice < 4 && STOREROOM[options[choice-1]]){
-                        addItem(STOREROOM[options[choice-1]]);
-                    }
-                    giveOptions(1);
-                    return;
-                }else{
-                    if(choice < 4 && WAREHOUSE[options[choice-1]]){
-                        addSymbol(WAREHOUSE[options[choice-1]]);
-                    }else if(choice == 5 && player.rerolls != 0){
-                        player.rerolls--;
-                        giveOptions(rarity);
-                        return;
-                    }
-                }
-               
-
-                $("#mailInterface")[0].hidePopover();
-                player.status = STATES.idle;
-            }
-            
-            
-           
-
-            $('#lever').on("click", function () {
-                if ($("#lever")[0].disabled) return;
-                spin();
-            });
-            $("#stats").on("click", function () {
-                player.history = [];
-                alert("Average history cleared");
-            });
-            $("#remove").on("click", function (){
-                if ($("#remove")[0].disabled) return;
-                let myInv = [];
-                let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
-                _.each(filterdInv, (value)=>{
-                    myInv.push(value.symbol.name)
-                });
-                if (player.removals > 0){
-                    removeSymbol(prompt(myInv.join(", ")));
-                }else{
-                    alert("You have no removal tokens!")
-                }
-            });
-            $("#symbolGetButton1").on("click", function () {
-                if ($("#symbolGetButton1")[0].disabled) return;
-                choose(1);
-            });
-            $("#symbolGetButton2").on("click", function () {
-                if ($("#symbolGetButton2")[0].disabled) return;
-                choose(2);
-            });
-            $("#symbolGetButton3").on("click", function () {
-                if ($("#symbolGetButton3")[0].disabled) return;
-                choose(3);
-            });
-            $("#skipButton").on("click", function () {
-                if ($("#skipButton")[0].disabled) return;
-                choose(4);
-            });
-            $("#rerollButton").on("click", function () {
-                if ($("#rerollButton")[0].disabled) return;
-                choose(5);
-            });
-            var dontRegister = false;
-            $("#welcome").on("click", welcome);
-            async function welcome(){
-                dontRegister = true;
-                await email("Your landlord.",`
-                Enjoy your stay in our apartment complex. It comes with a complimentary slot machine. You can use it to get 🪙 and pay your rent. Speaking of which, your rent is <c>${rentPrice[player.payments]}</c> and is due in <sp>${player["spins"]} spins</sp>. <br> 
-                Good luck,<br>
-                -Your Landlord<br>
-                <address>Landy_McLandlord@bouncy.mail</address><br>
-                <a href="https://github.com/TyconXon/Luck-Be-a-LAN-lord">Recreation by Maximus Fayte Miller (check out my other games!)</a><br>
-                <a href="https://trampolinetales.com/">Original game by TrampolineTales (buy their games!)</a><br>
-                ${Object.keys(WAREHOUSE).length} symbols out of 152 <i>(${Math.round(100*Object.keys(WAREHOUSE).length/152)}%)</i> complete <br>
-                ${Object.keys(STOREROOM).length} items out of 227 <i>(${Math.round(100*Object.keys(STOREROOM).length/227)}%)</i> complete <br>
-
-                <br>
-                <h2>Settings</h2>
-                <button onclick="changeSettings()">Submit</button>
-            
-                <p>Press F2 at any time to reset your settings. Press SPACE to continue.</p>
-            
-                <label for="floor">Floor (difficulty):</label>
-                <select id="floorIn" ${started?"disabled":""} name="floor" value="${localStorage.floor}">
-                    ${genFloors()}
-                </select>
-                
-                <br><hr>
-                <textarea id="JS" placeholder="Javascript">${localStorage.javascript || ""}</textarea>
-                <textarea id="CSS" placeholder="CSS">${localStorage.cascadingStyleSheets || ""}</textarea>
-                
-                `);
-                dontRegister = false;
-                changeSettings();
-            }
-            $("html").append("<style>"+ localStorage.cascadingStyleSheets || "" +"</style>"); 
-            // player.floor = Number(localStorage.floor);
-            
-            function changeSettings(){
-                localStorage.javascript = $("#JS")[0].value;
-                localStorage.cascadingStyleSheets = $("#CSS")[0].value;
-                localStorage.floor = $("#floorIn")[0].value;
-                player.floor = Number(localStorage.floor);
-                // eval($("#JS")[0].value);
-                $("html").append("<style>"+$("#CSS")[0].value+"</style>");
-            }
-            function genFloors(){
-                let finString = "";
-                _.times(20, function(x) {
-                  finString += `<option value="${x+1}" ${x+1==localStorage.floor?"selected":""}>${x+1}</option>`
-                })
-                return finString;
-            }
-            
-            var speed = false;
-            document.addEventListener("keyup", ev => {
-                if (ev.key == "Alt") speed = false;
-            });
-            document.addEventListener("keydown", ev => {
-                if (dontRegister) {
-                    if(ev.key == " " && document.activeElement.tagName != "TEXTAREA") $("#ok").click();
-                    if(ev.key == Number(ev.key) && ev.key != " " && document.activeElement.tagName != "TEXTAREA" && !$("#floorIn")[0].disabled) {
-                        ev.preventDefault();
-                        $("#floorIn")[0].value = ev.ctrlKey?Number(ev.key)+10:ev.key == "0"?20:ev.key
-                    }
-                    if(ev.key == "Enter" && ev.altKey) changeSettings();
-                    return;
-                }
-                switch (ev.key)
-                {
-                    case " ":
-                        ev.preventDefault();
-                        if(player.status == STATES.idle) spin();
-                        else if(player.status == STATES.reading) $("#ok").click();
-                        break;
-                    case "Backspace":
-                        $("#remove").click();
-                        break;
-                    case "1":
-                        $("#symbolGetButton1").click();
-                        break;
-                    case "2":
-                        $("#symbolGetButton2").click();
-                        break;
-                    case "3":
-                        $("#symbolGetButton3").click();
-                        break;
-                    case "5":
-                    case "s":
-                    case "S":
-                        $("#skipButton").click();
-                        break;
-                    case "4":
-                    case "r":
-                    case "R":
-                        $("#rerollButton").click();
-                        break;
-                    case "=":
-                        $("#stats").click();
-                        break;
-                    case "Alt":
-                        speed = true
-                        break;
-                    case "F2":
-                        localStorage.clear();
-                        break;
-                }
-            });
-            //{
-                class Symbol {
-                    static warehouse = [];
-                    constructor(parameters){
-                        // base, execute, calculate, calculateLater
-                        // let requiredParameters = ["name", "rarity", "calculate"];
-                        // requiredParameters.forEach(element => {
-                        //     if (!Object.keys(parameters).includes(element)) {
-                        //         console.error("Symbol parameters doesn't include " + element);
-                        //     }
-                        // });
-                        for (const [key, value] of Object.entries(parameters)) {
-                            this[key] = value
-                        }
-
-                        this.id = Symbol.warehouse.push(this) - 1;
-                        
-                    }
-
-                }
-                const descriptions = {
-                    // CAT: "$1, $9 for each milk it drinks",
-                    // ANCHOR: "$1, $4 if in corner",
-                    // BANANA: "$1, adds peel when destroyed",
-                    // BEE: "$1, +$1 on flower",
-                    // BOUNTY_HUNTER: "$1, destroys thiefs for $20",
-                    // BUBBLE: "$2, pops after 3 spins",
-                    // COAL: "$0, your christmas present",
-                    // CRAB: "$1, more for each other crab in row",
-                    // CROW: "$2, $-3 every 4 spins",
-                    // CULTIST: "$0 + number of cultists on board",
-                    // DOG: "$1, $2 if next to a human",
-                    // DWARF: "$1, drinks drunk give 10x value",
-                    // EGG: "$1 (WIP)",
-                    // GAMBLER: "$1, when destroyed: gives 2x times appeared on board",
-                    // GOLDFISH: "$1, pops bubbles for $15",
-                    // KEY: "$1, unlocks boxes then destroys itself",
-                    // LIGHT_BULB: "$1, +$value of rocks nearby. destroys itself after 5 shines",
-                    // LOCKBOX: "$1, contains $15 inside",
-                    // MAGPIE: "$-1, $9 every 4 spins",
-                    // MINER: "$1, destroys adjacent ores for $20",
-                    // MONKEY: "$1, eats bananas for $6 each",
-                    // ORE: "$1, contains a gem inside",
-                    // OWL: "$1, +$1 every 3 spins",
-                    // OYSTER: "$1, 20% to add a pearl",
-                    // PRESENT: "$0, contains 10. destroys after 12 spins",
-                    // SNAIL: "$0, $5 every 4 spins",
-                    // THREE_SIDED_DIE: "rolls between $1 and $3, destroys gamblers on $1",
-                    // TODDLER: "$1, gives +$6 for each present, candy, or pinata it destroys",
-                    // TURTLE: "$0, $4 every 3 spins",
-
-                };
-                const WAREHOUSE = {
-                    EMPTY : new Symbol({name: "empty", rarity: -1, skip:1, base:0}),
-                    DUD : new Symbol({name: "dud", rarity: -1, skip:1, base:0}),
-                    SQUIGGLE : new Symbol({name: "squiggle", rarity: -1, base:-1}),
-
-                    CAT: new Symbol({name: "cat", rarity: 0, base:1, calculate: async (self)=>{
-                        return 9 * await eat("milk", self); 
-                    }, beast: 1}),
-
-                    MILK: new Symbol({name: "milk", rarity: 0, base:1, food: 1}),
-
-                    ANCHOR: new Symbol({name: "anchor", rarity: 0, base:1, calculate: async(self)=>{
-                        if (((self.x == 3 || self.x == 0) && (self.y == 0 || self.y == 4))){
-                            return 4;
-                        }
-                        return 0;
-                    }, aquatic: 1}),
-
-                    BANANA: new Symbol({name: "banana", rarity: 0, base:1, onDestroy: (self)=>{
-                        addSymbol(WAREHOUSE.BANANA_PEEL);
-                    }, monkeyLikes: 1, fruit: 1, food: 1,}),
-
-                    BANANA_PEEL: new Symbol({name: "banana peel", rarity: 0, base:1}),
-
-                    BEE: new Symbol({name: "bee", rarity: 0, base:1, calculate: async(self)=>{
-                        return await bonus("flower", self, "x2");
-                    }, beast: 1}),
-
-                    BEER: new Symbol({name: "beer", rarity: 0, base:1, alch: 1, food: 1}),
-                    
-                    BOUNTY_HUNTER: new Symbol({name: "bounty hunter", rarity: 0, base:1, calculate: async(self)=>{
-                        return await eat("thief", self) * 20 ; 
-                    }, human: 1}),
-
-                    BUBBLE: new Symbol({name: "bubble", rarity: 0, base:2, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 4;
-                        if(self.timer == 1){
-                               
-                            destroySymbol(self);
-                        }   
-                        return 0;
-                    }, babyLikes: 1}),
-
-                    CANDY: new Symbol({name: "candy", rarity: 0, base:1, babyLikes: 1,}),
-
-                    CHEESE: new Symbol({name: "cheese", rarity: 0, base:1, richLikes:1, food: 1}),
-
-                    CHERRY: new Symbol({name: "cherry", rarity: 0, base:1,fruit: 1, food: 1,}),
-
-                    COAL: new Symbol({name: "coal", rarity: 0, base:0, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 21;
-                        if(self.timer == 1){
-                            destroySymbol(self);
-                                             
-                        }
-                        return 0;   
-                    }}),
-
-                    COIN: new Symbol({name: "coin", rarity: 0,  base:1, }),
-
-                    CRAB: new Symbol({name: "crab", rarity: 0, base:1, execute: async(self)=>{
-                        let countingCoins = 0;
-                        for (element of slots[self.x]){
-                            if (element.symbol.name == "crab"){
-                                countingCoins+=1;
-                            }
-                        }
-                        return countingCoins-1;
-                    }, beast: 1,aquatic:1}),
-
-                    CROW: new Symbol({name: "crow", rarity: 0, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 5;
-                        if(self.timer == 1){
-                            return -3;
-                        }
-                        return 2;   
-                    }, beast: 1,bird:1,}),
-
-
-                    CULTIST: new Symbol({name: "cultist", rarity: 0, base:0,  execute: async(self)=>{
-                        let countingCoins = -1;
-                        slots.forEach(row => {
-                            countingCoins += _.filter(row, (value) => {
-                            return value.symbol.name == "cultist";
-                            }).length
-                        });
-                        return countingCoins;
-                    }, human: 1}),
-                    
-                    DOG: new Symbol({name: "dog", rarity: 0, base:1,  execute: async(self)=>{
-
-                        for (element of adjacentSlots(self.y, self.x)){
-                            if (element.symbol.human) {
-                                element.e.css("outline", "white 2px solid");
-                                await delay(500);
-                                element.e.css("outline", "none");
-                                return 2;
-                            }
-                        };
-
-                        return 0;
-                    }, beast: 1}),
-
-                    DWARF: new Symbol({name: "dwarf", rarity: 0, base:1, calculateLater: async (self)=>{
-                        
-                        let countingCoins = 0;
-                        for (element of adjacentSlots(self.y, self.x)){
-                            if (element.symbol.alch) {
-                                countingCoins += await element.finalOutput * 10;
-                                element.e.css("opacity", "1.0");                 
-                                element.e.css("outline", "white 2px solid");
-                                await delay(500);
-                                element.e.css("opacity", "0.25");                 
-                                await delay(500);
-                                element.e.css("outline", "none");
-                                destroySymbol(element)
-                            }
-                        };
-
-                        return countingCoins;    
-                    }, human:1}),
-
-                    EGG: new Symbol({name: "egg", rarity: 0, base:1,  execute: async(self)=>{
-                        let result = _.random(1,10);
-                        if(result == 1){
-                            destroySymbol(self);
-                            addSymbol(WAREHOUSE.CHICK)
-                        }
-                        return 0;
-                    }, food: 1}),
-                    CHICK: new Symbol({name: "chick", rarity: 1, base:1,  execute: async(self)=>{
-                        let result = _.random(1,10);
-                        if(result == 1){
-                            destroySymbol(self);
-                            addSymbol(WAREHOUSE.CHICKEN)
-                        }
-                        return 0;
-                    }, beast: 1}),
-                    CHICKEN: new Symbol({name: "chicken", rarity: 2, base:2,  execute: async(self)=>{
-                        let result = _.random(1,20);
-                        if(result == 1){
-                            addSymbol(WAREHOUSE.EGG)
-                        }
-                        return 0;
-                    }, beast: 1}),
-
-                    FLOWER: new Symbol({name: "flower", rarity: 0,  base:1, }),
-
-                    GAMBLER: new Symbol({name: "gambler", rarity: 0, base:1, execute: async(self)=>{
-                        self.savings = self.savings + 2 || 2;
-                        return 0;    
-                    }, onDestroy: (self)=>{
-                        return self.savings || 2;
-                    },  human: 1}),
-
-                    GOLDFISH: new Symbol({name: "goldfish", rarity: 0, base:1,  calculate: async (self)=>{
-                        return (15 * await eat("bubble", self));    
-                    }, beast: 1,aqautic:1}),
-
-                    GOOSE: new Symbol({name: "goose", rarity: 0, base:1, bird: 1, beast: 1}),
-
-                    KEY: new Symbol({name: "key", rarity: 0, base:1, calculate: async(self)=>{
-                        let findBoxes = await eatType("box", self); 
-                        if (findBoxes > 0){
-                            destroySymbol(self);
-                        }
-                        return findBoxes;
-                    }}),
-
-                    LIGHT_BULB: new Symbol({name: "light bulb", rarity: 0, base:1,execute: async(self)=>{
-                        self.uses = self.uses - 1 || 6;
-                        if(self.uses <= 1){
-                            destroySymbol(self)
-                             
-                        }
-                        return 0;
-                    }, calculate: async(self)=>{
-                        let result = await bonusType("rock", self, "x2");
-                        self.uses = self.uses - result || 6;
-                        if(self.uses <= 1){
-                            destroySymbol(self)
-                             
-                        }
-                        return 0;    
-                    }}),
-
-                    LOCKBOX: new Symbol({name: "lockbox", rarity: 0, base:1,  box: 15}),
-
-                    MAGPIE: new Symbol({name: "magpie", rarity: 0, base:1, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 5;
-                        if(self.timer == 1){
-                            return 8;
-                        }
-                        return -2;  
-                    }, bird: 1, beast: 1}),
-
-                    MINER: new Symbol({name: "miner", rarity: 0,base:1, calculate: async (self)=>{
-                        return 20 * await eatType("ore", self);   
-                    }, human:1}),
-
-                    MONKEY: new Symbol({name: "monkey", rarity: 0, base:1, calculate: async (self)=>{
-                        return (6 * await eatType("monkeyLikes", self));    
-                    }, beast: 1}),
-
-                    MOUSE: new Symbol({name: "mouse", rarity: 0, base:1, calculate: async (self)=>{
-                        return (20 * await eat("cheese", self));    
-                    }, beast:1}),
-
-                    ORE: new Symbol({name: "ore", rarity: 0, base:1, onDestroy: (self)=>{
-                        addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE,WAREHOUSE.VOID_STONE]));
-                    }, ore:1}),
-
-                    OWL: new Symbol({name: "owl", rarity: 0, base:1, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 4;
-                        if(self.timer == 1){
-                            return 1;
-                        }
-                        return 0;  
-                    }, bird: 1, beast: 1}),
-
-                    OYSTER: new Symbol({name: "oyster", rarity: 0, base:1, execute: async(self)=>{
-                        if(_.random(1, 10) == 10){
-                            addSymbol(WAREHOUSE.PEARL)
-                        }
-                        return 0;
-
-                    }, aquatic:1, beast: 1}),
-
-                    PEARL: new Symbol({name: "pearl", rarity: 0,  base:1, aquatic:1, rock:1}),
-
-                    PRESENT: new Symbol({name: "present", rarity: 0, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 13;
-                        if(self.timer == 1){
-                            destroySymbol(self);
-                                             
-                            return 10;
-                        }
-                        return 0;    
-                    }, babyLikes:1}),
-
-                    SEED: new Symbol({name: "seed", rarity: 0,  base:1, execute:async(self)=>{
-                        let result = _.random(1,4);
-                        if(result == 1){
-                            destroySymbol(self);
-                            addSymbol(WAREHOUSE.BANANA)
-                        }
-                        return 0;
-                    }}), //tbd
-                    
-                    SHINY_PEBBLE: new Symbol({name: "shiny pebble", rarity: 0, base:1, rock:1}),
-
-                    SNAIL: new Symbol({name: "snail", rarity: 0, base:0, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 5;
-                        if(self.timer == 1){
-                            return 5;
-                        }
-                        return 0;  
-                    }, aquatic: 1, beast: 1}),
-
-                    THREE_SIDED_DIE: new Symbol({name: "d3", rarity: 0, execute: async(self)=>{
-                        let result = _.random(1,3);
-                        if(result == 1){
-                            for (var row of slots){
-                                let fR = _.filter(row, (value) => {
-                                    return value.symbol.name == "gambler";
-                                });
-                                for (const element of Object.keys(fR)) {
-                                    fR[element].e.text(fR[element].symbol.name);
-                                    fR[element].e.css("outline", "white 2px solid");
-                                    await delay(500);
-                                    fR[element].e.text("+"+destroySymbol(fR[element]));
-                                    await delay(500);
-                                    fR[element].e.css("outline", "none");
-                                    
-                                }
-                            }
-                        }
-                        return result;
-                    }, dice: 1}),
-
-                    TODDLER: new Symbol({name: "toddler", rarity: 0, base:1, calculate: async (self)=>{
-                        return (6 * await eatType("babyLikes", self));    
-                    }, human: 1}),
-
-                    TURTLE: new Symbol({name: "turtle", rarity: 0, base:0, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 4;
-                        if(self.timer == 1){
-                            return 4;
-                        }
-                        return 0;  
-                    }, aquatic: 1, beast: 1}),
-
-                    URN: new Symbol({name: "urn", rarity: 0, base:1, urn: 1, onDestroy: (self)=>{
-                        addSymbol(WAREHOUSE.SPIRIT);
-                        return 0;
-                    }}),
-                //RARITY 1
-                    BAR_OF_SOAP: new Symbol({name: "bar of soap", rarity: 1, base:1, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 4;
-                        await delay(200);
-                        addSymbol(WAREHOUSE.BUBBLE);
-                        if(self.timer == 1){
-                            destroySymbol(self);
-                                             
-                        }
-                        return 0;    
-                    }}),
-
-                    BEAR: new Symbol({name: "bear", rarity: 1,base:2, beast: 1}),
-
-                    BIG_ORE: new Symbol({name: "big ore", rarity: 1,  base:2, onDestroy: (self)=>{
-                        addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE,WAREHOUSE.VOID_STONE]));
-                        addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE,WAREHOUSE.VOID_STONE]));
-                    }, ore:2}),
-
-                    BIG_URN: new Symbol({name: "big urn", rarity: 1,  base:2, urn:2, onDestroy: (self)=>{
-                        addSymbol(WAREHOUSE.SPIRIT);
-                        addSymbol(WAREHOUSE.SPIRIT);
-                        return 0;
-                    }}),
-
-                    BILLIONAIRE: new Symbol({name: "billionaire", rarity: 1, base:0, calculate: async(self)=>{
-                        await bonusType("richLikes", self, "x2")
-                        return 0;    //tbd
-                    }, onDestroy: (self)=>{
-                        return 39;
-                    },}),
-
-                    BRONZE_ARROW: new Symbol({name: "bronze arrow", rarity: 1, base:0, execute: async(self)=>{
-                        for (element of slots[self.x]){
-                            if(element != self) await giveBonus(element,self,"x2", 100);
-                        }
-                        return 0;  //placeholder   tbd
-                    }}),
-
-                    FIVE_SIDED_DIE: new Symbol({name: "d5", rarity: 1, execute: async(self)=>{
-                        let result = _.random(1,5);
-                        if(result == 1){
-                            for (var row of slots){
-                                let fR = _.filter(row, (value) => {
-                                    return value.symbol.name == "gambler";
-                                });
-                                for (const element of Object.keys(fR)) {
-                                    fR[element].e.css("opacity", "1.0");
-                                    fR[element].e.css("outline", "white 2px solid");
-                                    await delay(500);
-                                    fR[element].e.text("+"+destroySymbol(fR[element]));
-                                    await delay(500);
-                                    fR[element].e.css("outline", "none");
-                                    
-                                }
-                            }
-                        }
-                        return result;
-                    }, dice: 2}),
-
-                    COCONUT: new Symbol({name: "coconut", rarity: 1, base:1, onDestroy: (self)=>{
-                        addSymbol(WAREHOUSE.COCONUT_HALF);
-                        addSymbol(WAREHOUSE.COCONUT_HALF);
-                    }, food: 1, monkeyLikes: 1, fruit: 1,}),
-                    COCONUT_HALF: new Symbol({name: "coconut half", rarity: 1, food: 1, base:2, monkeyLikes: 1, fruit: 1,}),
-                    ORANGE: new Symbol({name: "orange", rarity: 1, food: 1, base:2, fruit: 1,}),
-                    PEACH: new Symbol({name: "peach", rarity: 1, base:1, onDestroy: (self)=>{
-                        addSymbol(WAREHOUSE.SEED);
-                    }, fruit: 1, food: 1}),
-                    
-                    DIAMONDS: new Symbol({name: "diamonds", rarity: 1, base:1, redSuit:1,}), //tbd
-                    HEARTS: new Symbol({name: "hearts", rarity: 1, base:1, redSuit:1,}), //tbd
-                    SPADES: new Symbol({name: "spades", rarity: 1, base:1, blueSuit:1,}), //tbd
-                    CLUBS: new Symbol({name: "clubs", rarity: 1, base:1, blueSuit:1,}), //tbd
-
-                    GOLEM: new Symbol({name: "golem", rarity: 1, base:1, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 6;
-                        if(self.timer == 1){
-                            destroySymbol(self);
-                            _.times(5,()=>{addSymbol(WAREHOUSE.ORE)});
-                            
-                        }
-                        return 0;   
-                    }, beast: 1}),
-
-                    HOOLIGAN: new Symbol({name: "hooligan", rarity: 1, base:1, calculate: async (self)=>{
-                        return 6 * await eatType("urn", self); 
-                    }, human:1}),
-
-                    PINATA: new Symbol({name: "pinata", rarity: 1, base:1, onDestroy: (self)=>{
-                        _.times(7, ()=>{addSymbol(WAREHOUSE.CANDY);}); 
-                    }, babyLikes: 1,}),
-
-                    SAFE: new Symbol({name: "safe", rarity: 1, base:1, box: 30}),
-
-                    SAPPHIRE: new Symbol({name: "sapphire", rarity: 1, base:2, rock: 2}),
-
-                    THIEF: new Symbol({name: "thief", rarity: 1, base:-1, execute: async(self)=>{
-                        self.savings = self.savings+4 || 1;
-                        return 0;    
-                    }, onDestroy: (self)=>{
-                        return self.savings || 1;
-                    },  human: 1}),
-
-                    VOID_CREATURE: new Symbol({name: "void creature", rarity: 1, base:1, execute: async(self)=>{
-                        let result = await bonus("empty", self, 2);
-                        if(result == 0){
-                            destroySymbol(self);
-                            
-                            return 7;
-                        }
-                        return 0;    
-                    }, beast: 1}),
-                    VOID_FRUIT: new Symbol({name: "void fruit", rarity: 1, base:1, execute: async(self)=>{
-                        let result = await bonus("empty", self, 2);
-                        if(result == 0){
-                            destroySymbol(self);
-                            
-                            return 7;
-                        }
-                        return 0;    
-                    }, food: 1}),
-                    VOID_STONE: new Symbol({name: "void stone", rarity: 1, base:1, execute: async(self)=>{
-                        let result = await bonus("empty", self, 2);
-                        if(result == 0){
-                            destroySymbol(self);
-                            
-                            return 7;
-                        }
-                        return 0;    
-                    }}),
-
-                    WEALTHY_CAPSULE: new Symbol({name: "lucky capsule", rarity: 1, base:10, execute: async(self)=>{
-                        destroySymbol(self);
-                        
-                        return 0;
-                    }}),
-                    BUFFING_CAPSULE: new Symbol({name: "buffing powder", rarity: 1, base:0, execute: async(self)=>{
-                        await bonusType("name",self,"x2")
-                        destroySymbol(self);
-                        return 0;
-                    }}),
-                    ESSENCE_CAPSULE: new Symbol({name: "essence capsule", rarity: 1, base:-12, execute: async(self)=>{
-                        player.tokens++;
-                        destroySymbol(self);
-                        return 0;
-                    }}),
-                    REMOVAL_CAPSULE: new Symbol({name: "removal capsule", rarity: 1, base:0, execute: async(self)=>{
-                        player.removals++;
-                        destroySymbol(self);
-                        return 0;
-                    }}),
-                    REROLL_CAPSULE: new Symbol({name: "reroll capsule", rarity: 1, base:0, execute: async(self)=>{
-                        player.rerolls++;
-                        destroySymbol(self);
-                        return 0;
-                    }}),
-                    HUSTLING_CAPSULE: new Symbol({name: "hustler", rarity: 1, base:-7, execute: async(self)=>{
-                        addItem(STOREROOM.POOL_BALL)
-                        destroySymbol(self);
-                        return 0;
-                    }}),
-                    ITEM_CAPSULE: new Symbol({name: "item capsule", rarity: 1, base:0, execute: async(self)=>{
-                        let fR = _.filter(STOREROOM, (value) => {
-                            return value.rarity == 0;
-                        });
-                        
-                        addItem(_.sample(fR));
-                        destroySymbol(self);
-                        return 0;
-                    }}),
-                    LUCKY_CAPSULE: new Symbol({name: "rarity capsule", rarity: 1, base:0, execute: async(self)=>{
-                        let fR = _.filter(WAREHOUSE, (value) => {
-                            return value.rarity == 2;
-                        });
-                        
-                        addSymbol(_.sample(fR));
-                        destroySymbol(self);
-                        return 0;
-                    }}),
-                    TEDIUM_CAPSULE: new Symbol({name: "tedium capsule", rarity: 1, base:5, execute: async(self)=>{
-                        let fR = _.filter(WAREHOUSE, (value) => {
-                            return value.rarity == 0;
-                        });
-                        
-                        addSymbol(_.sample(fR));
-                        destroySymbol(self);
-                        return 0;
-                    }}),
-                    TIME_CAPSULE: new Symbol({name: "time capsule", rarity: 1, base:0, execute: async(self)=>{
-                        addSymbol(_.sample(deletionHistory).symbol);
-                        destroySymbol(self);
-                        return 0;
-                    }}),
-                    CHEMICAL_SEVEN: new Symbol({name: "chemical seven", rarity: 1, base:7, execute: async(self)=>{
-                        destroySymbol(self);
-                        return 0;
-                    }, beast: 1}),
-
-                    WINE: new Symbol({name: "wine", rarity: 1, base:2, alch: 2, richLikes:1, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 9;
-                        if(self.timer == 1){
-                            self.timer = 2;
-                            return 1;
-                        }
-                        return 0;  
-                    }, food: 1}),
-
-                    HEX_OF_MIDAS: new Symbol({name: "hex of midas", rarity: 1, base:3, execute: async(self)=>{
-                        let result = _.random(1,3);
-                        if(result == 1){
-                            addSymbol(WAREHOUSE.COIN)
-                        }
-                        return 0;
-                    }, hex: 1}),
-                    HEX_OF_THIEVERY: new Symbol({name: "hex of thievery", rarity: 1, base:3, execute: async(self)=>{
-                        let result = _.random(1,3);
-                        if(result == 1){
-                            return -9;
-                        }
-                        return 0;
-                    }, hex: 1}),
-                    HEX_OF_TEDIUM: new Symbol({name: "hex of tedium", rarity: 1, base:3, hex:1}),
-                    HEX_OF_EMPTINESS: new Symbol({name: "hex of emptiness", rarity: 1, base:3, execute: async(self)=>{
-                        let result = _.random(1,3);
-                        if(result == 1){
-                            hexxed = 1;
-                        }
-                        return 0;
-                    }, hex: 1}),
-                    HEX_OF_HOARDING: new Symbol({name: "hex of hoarding", rarity: 1, base:3, execute: async(self)=>{
-                        let result = _.random(1,3);
-                        if(result == 1){
-                            hexxed = 2;
-                        }
-                        return 0;
-                    }, hex: 1}),
-                    HEX_OF_DRAINING: new Symbol({name: "hex of draining", rarity: 1, base:3, execute: async(self)=>{
-                        let result = _.random(1,3);
-                        if(result == 1){
-                            let eenieMeenieMinieMoe = _.random(0,adjacentSlots(self.y, self.x).length);
-                            for (element of adjacentSlots(self.y, self.x)){
-                                if (eenieMeenieMinieMoe == 0){
-                                    await bonusType("name",self,"x0");
-                                    return 0;
-                                }
-                                eenieMeenieMinieMoe--;
-                            }
-                        }
-                        return 0;
-                    }, hex: 1}),
-                    HEX_OF_DESTRUCTION: new Symbol({name: "hex of destruction", rarity: 1, base:3, execute: async(self)=>{
-                        let result = _.random(1,3);
-                        if(result == 1){
-                            let eenieMeenieMinieMoe = _.random(0,adjacentSlots(self.y, self.x).length);
-                            for (element of adjacentSlots(self.y, self.x)){
-                                if (eenieMeenieMinieMoe == 0){
-                                    destroySymbol(element);
-                                    return 0;
-                                }
-                                eenieMeenieMinieMoe--;
-                            }
-                        }
-                        return 0;
-                    }, hex: 1}),
-
-                    RABBIT: new Symbol({name: "rabbit", rarity: 1, base:1, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 11;
-                        if(self.timer == 1){
-                            self.timer = 2;
-                            return 2;
-                        }
-                        return 0;  
-                    }, beast: 1}),
-                    RABBIT_FLUFF: new Symbol({name: "rabbit fluff", rarity: 1, base:2}),
-                    WOLF: new Symbol({name: "wolf", rarity: 1, base:2, beast: 1}),
-
-                    RAIN: new Symbol({name: "rain", rarity: 1, base:2, calculate: async(self)=>{
-                        return await bonus("flower", self, "x2");
-                    }}),
-
-                    NINJA: new Symbol({name: "ninja", rarity: 1,base:2, execute: async(self)=>{
-                        let result = 1;
-                        for (var row of slots){
-                            let fR = _.filter(row, (value) => {
-                                return value.symbol.name == "ninja";
-                            });
-                            result -= fR.length;
-                        }
-                        return result;
-                    }}),
-                    JELLYFISH: new Symbol({name: "jellyfish", rarity: 1, base:2, onDestroy: (self)=>{
-                        player.removals++;
-                    },  aquatic: 1, beast: 1}),
-                    SAND_DOLLAR: new Symbol({name: "sand dollar", rarity: 1, base:2, onDestroy: (self)=>{
-                        return 10;
-                    },  aquatic: 1, beast: 1}),
-                    SLOTH: new Symbol({name: "sloth", rarity: 1, base:0, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 3;
-                        if(self.timer == 1){
-                            return 4;
-                        }
-                        return 0;  
-                    }, beast: 1}),
-
-                    TARGET: new Symbol({name: "target", rarity: 1, base:2, execute: async(self)=>{
-                        for (element of slots[self.x]){
-                            if (element.symbol.name.includes("arrow")){
-                                destroySymbol(self);
-                                return 10;
-                            }
-                        }
-                        return 0;
-                    }}),
-                //RARITY 2
-                    APPLE: new Symbol({name: "apple", rarity: 2, base:3,}),
-                    BARTENDER: new Symbol({name: "bartender", rarity: 2, base:3, execute: async(self)=>{
-                        if(_.random(1, 10) == 10){
-                            addSymbol(WAREHOUSE.WINE)
-                        }
-                        return 0;
-
-                    }, human:1}),
-                    BEASTMASTER: new Symbol({name: "beastmaster", rarity: 2, base:2, execute: async(self)=>{
-                        await bonusType("beast",self,"x2");
-                        return 0;
-                    }}),
-                    CHEF: new Symbol({name: "chef", rarity: 2, base:2, execute: async(self)=>{
-                        await bonusType("food",self,"x2");
-                        return 0;
-                    }, human:1}),
-                    COW: new Symbol({name: "cow", rarity: 2, base:3, execute: async(self)=>{
-                        if(_.random(1, 5) == 1){
-                            addSymbol(WAREHOUSE.MILK)
-                        }
-                        return 0;
-
-                    }, beast:1}),
-                    DAME: new Symbol({name: "dame", rarity: 2, base:2, execute: async(self)=>{
-                        await bonusType("gem",self,"x2");
-                        return 0;
-                    }, human:1}),
-                    GENERAL_ZAROFF: new Symbol({name: "general zaroff", rarity: 2,base:1, calculate: async (self)=>{
-                        return 25 * await eatType("human", self);   
-                    }, human:1}),
-                    KING_MIDAS: new Symbol({name: "king midas", rarity: 2, base:1, calculate: async(self)=>{
-                        await bonus("coin",self,"x2");
-                        addSymbol(WAREHOUSE.COIN)
-                        return 0;
-                    }, human:1}),
-                    MAGIC_KEY: new Symbol({name: "magic key", rarity: 2, base:2, calculate: async(self)=>{
-                        let findBoxes = await eatType("box", self); 
-                        if (findBoxes > 0){
-                            destroySymbol(self);
-                        }
-                        return findBoxes * 3;
-                    }}),
-                    MINE: new Symbol({name: "mine", rarity: 2, base:4, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 5;
-                        await delay(200);
-                        addSymbol(WAREHOUSE.BIG_ORE);
-                        if(self.timer == 1){
-                            destroySymbol(self);
-                                          
-                        }
-                        return 0;    
-                    }}),
-                    SPIRIT: new Symbol({name: "spirit", rarity: 2, base:6, execute: async(self)=>{
-                        self.timer = self.timer - 1 || 5;
-                        if(self.timer == 1){
-                            destroySymbol(self);
-                        }
-                        return 0;    
-                    }, beast:1}),
-                    TOMB: new Symbol({name: "tomb", rarity: 2, base:3, urn:3, execute: async(self)=>{
-                        if(_.random(1, 20) == 1){
-                            addSymbol(WAREHOUSE.SPIRIT)
-                        }
-                        return 0;
-
-                    }, onDestroy: (self)=>{
-                        addSymbol(WAREHOUSE.SPIRIT);
-                        addSymbol(WAREHOUSE.SPIRIT);
-                        addSymbol(WAREHOUSE.SPIRIT);
-                        addSymbol(WAREHOUSE.SPIRIT);
-                        return 0;
-                    }}),
-                    TREASURE_CHEST: new Symbol({name: "treasure chest", rarity: 2, base:2,  box: 50}),
-                    WITCH: new Symbol({name: "witch", rarity: 2, base:2, execute: async(self)=>{
-                        await bonusType("hex",self,"x2");
-                        await bonus("cat",self,"x2");
-                        await bonus("spirit",self,"x2");
-                        await bonus("crow",self,"x2");
-                        await bonus("owl",self,"x2");
-                        await bonus("apple",self,"x2");
-
-                        return 0;
-                    }}),
-                    SILVER_ARROW: new Symbol({name: "silver arrow", rarity: 2, base:0, execute: async(self)=>{
-                        for (element of slots[self.x]){
-                            if(element != self) await giveBonus(element,self,"x3", 100);
-                        }
-                        return 0;  //placeholder   tbd
-                    }}),
-                //RARITY 3
-                    DIAMOND: new Symbol({name: "diamond", rarity:3,base:5, execute: async(self)=>{
-                        let result = 1;
-                        for (var row of slots){
-                            let fR = _.filter(row, (value) => {
-                                return value.symbol.name == "ninja";
-                            });
-                            result += fR.length;
-                        }
-                        return result;
-                    }}),
-                    GOLDEN_ARROW: new Symbol({name: "golden arrow", rarity: 3, base:1, execute: async(self)=>{
-                        for (element of slots[self.x]){
-                            if(element != self) await giveBonus(element,self,"x4", 100);
-                        }
-                        return 0;  //placeholder   tbd
-                    }}),
-                    MEGA_CHEST: new Symbol({name: "mega chest", rarity: 3, base:2, box: 100}),
-                    WILDCARD: new Symbol({name: "wildcard", rarity: 3, calculateLater: async(self)=>{
-                        let result = 0;
-                        for (element of adjacentSlots(self.y, self.x)){
-                            if (element.finalOutput > result){
-                                result = element.finalOutput
-                            }
-                        }
-                        
-                        return result;
-                    }}),
-                }; 
-                const STOREROOM = {
-                    ANTHROPOLOGY_DEGREE: {name:"Anthropology Degree", rarity:2, calculate: (self,context,base)=>{
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol.human?1:0;
-                        }else { return 0; }
-                    }},
-                    BIRDHOUSE: {name:"Birdhouse", rarity:0, calculate: (self,context,base)=>{
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol.bird?1:0;
-                        }else { return 0; }
-                    }},
-                    RICKY_THE_BANANA: {name:"Ricky the Banana", rarity:0, calculate: (self,context,base)=>{
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol.name.includes("banana")?2:0;
-                        }else { return 0; }
-                    }},
-                    OSWALD_THE_MONKEY: {name:"Oswald the Monkey", rarity:0, calculate: (self,context,base)=>{
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol.name.includes("monkey")?base:0;
-                        }else { return 0; }
-                    }},
-                    PIZZA_THE_CAT: {name:"Pizza the Cat", rarity:0, calculate: (self,context,base)=>{
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol.name.includes("cat")?1:0;
-                        }else { return 0; }
-                    }},
-                    KYLE_THE_KERNITE: {name:"Kyle the Kernite", rarity:0, calculate: (self,context,base)=>{
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol.ore || context.symbol == WAREHOUSE.SHINY_PEBBLE?1:0;
-                        }else { return 0; }
-                    }},
-                    JACKOLANTERN: {name:"Jackolantern", rarity:0, calculate: (self,context,base)=>{
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol == WAREHOUSE.TODDLER || context.symbol == WAREHOUSE.CANDY?1:0;
-                        }else { return 0; }
-                    }},
-                    NORI_THE_RABBIT: {name:"Nori the Rabbit", rarity:0, calculate: (self,context,base)=>{
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol.name.includes("rabbit")?1:0;
-                        }else { return 0; }
-                    }},
-                    BLACK_CAT: {name:"Black Cat",rarity:1, calculate: (self,context,base)=>{
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol.name == "cat"?base:0;
-                        }else if(context == "onCount"){
-                            return base%0==0?9:0;
-                        } else { return 0; }
-                    }},
-                    BLACK_PEPPER: {name:"Black Pepper",rarity:0, calculate: (self,context,base)=>{
-                        if(context == "onCount"){
-                            let old = self.count || 0;
-                            self.count = 0;
-                            return old;
-                        } else if(context == "onDestroy"){
-                            self.count = self.count+1 || 1;
-                            return 0;
-                        } else { return 0; }
-                    }},
-                    BROWN_PEPPER: {name:"Brown Pepper",rarity:0, calculate: (self,context,base)=>{
-                        if(context == "onCount"){
-                            let old = self.count || 0;
-                            self.count = 0;
-                            return old;
-                        } else if(context == "onAdded"){
-                            self.count = self.count+1 || 1;
-                            return 0;
-                        } else { return 0; }
-                    }},
-                    BOWLING_BALL: {name:"Bowling Ball",rarity:3, calculate: (self,context,base)=>{
-                        if(context == "onCount"){
-                            return 3;
-                        } else { return 0; }
-                    }},
-                    POOL_BALL: {name:"Pool Ball",rarity:0, calculate: (self,context,base)=>{
-                        if(context == "onCount"){
-                            return 1;
-                        } else { return 0; }
-                    }},
-                    BLUE_PEPPER: {name:"Blue Pepper",rarity:0, calculate: (self,context,base)=>{
-                        if(context == "onCount"){
-                            let nothings = player.inventory.filter((a)=>{return a.symbol.name == "empty"});
-                            if (nothings.length >=3) return 3;
-                            return 0;
-                        } else { return 0; }
-                    }},
-                    CYAN_PEPPER: {name:"Cyan Pepper",rarity:0, calculate: (self,context,base)=>{
-                        if(context == "onCount"){
-                            
-                            let counts = {};
-                            let sampleArray = _.flatten(slots);
-                            sampleArray.forEach(function (x) {if(x.symbol.name == "empty"){return;} counts[x.symbol.name] = (counts[x.symbol.name] || 0) + 1; });
-                            
-                            // alert(JSON.stringify(sampleArray));
-                            // alert(JSON.stringify(counts))
-                            if(_.any(counts, (x)=>{return x >=3})){
-                                return 0;
-                            }
-                            return 3;
-                        } else { return 0; }
-                    }},
-                    GREEN_PEPPER: {name:"Green Pepper",rarity:0, calculate: (self,context,base)=>{
-                        if(context == "onCount"){
-                            
-                            let counts = {};
-                            let sampleArray = _.flatten(slots);
-                            sampleArray.forEach(function (x) {if(x.symbol.name == "empty"){return;} counts[x.symbol.name] = (counts[x.symbol.name] || 0) + 1; });
-                            
-                            // alert(JSON.stringify(sampleArray));
-                            // alert(JSON.stringify(counts))
-                            if(_.any(counts, (x)=>{return x >=3})){
-                                return 3;
-                            }
-                            return 0;
-                        } else { return 0; }
-                    }},
-                    RED_PEPPER: {name:"Red Pepper",rarity:0, calculate: (self,context,base)=>{
-                        if(context == "onCount"){
-                            
-                            let counts = {};
-                            let sampleArray = _.flatten(slots);
-                            sampleArray.forEach(function (x) {if(x.symbol.name == "empty"){return;} counts[x.symbol.name] = (counts[x.symbol.name] || 0) + 1; });
-                            
-                            // alert(JSON.stringify(sampleArray));
-                            // alert(JSON.stringify(counts))
-                            if(_.any(counts, (x)=>{return x > 1})){
-                                return 0;
-                            }
-                            return 5;
-                        } else { return 0; }
-                    }},
-                    FISH_TANK: {name:"Fish Tank",rarity:0, calculate: (self,context,base)=>{
-                        if(context == "onCount"){
-                            let old = self.count || 0;
-                            return old;
-                        } else if (typeof context == typeof STOREROOM){
-                            if (context.symbol.name == "goldfish"){
-                                self.count = (self.count || 0) + 1;
-                                destroySymbol(context);
-                            }
-                            return 0;
-                        } else { return 0; }
-                    }},
-                    DWARVEN_ANVIL: {name:"Dwarven Anvil",rarity:0, calculate: (self,context,base)=>{
-                        WAREHOUSE.ORE.alch = 1
-                        WAREHOUSE.BIG_ORE.alch = 1
-
-                        if (typeof context == typeof STOREROOM){
-                            return context.symbol.name == "dwarf"?base:0;
-                        }else if(context == "onCount"){ 
-                            return base%0==0?9:0;
-                        } else { return 0; }
-                    }},
-                };
-            //}End of WAREHOUSE (EOW)
-            
-            init();
-        </script>
-    </body>
+		<style>
+			@font-face {
+				font-family: 'sinsgold'; /* A name you choose for your font */
+				src: url('assets/fonts/SinsGold-MOD.ttf');
+			}
+			:root {
+				--pending: #0b1020;
+			}
+			html{
+				background-color: dimgray;
+				/* font-family: "sinsgold"; */
+				-webkit-text-stroke: 0.2em rgba(0,0,0,1);
+				paint-order: stroke fill;
+				color:white;
+				image-rendering: pixelated;
+				cursor: url("assets/cursor/cursor_00.png"), auto;
+
+			}
+			textarea, select, input{
+				-webkit-text-stroke: 0em rgba(0,0,0,1);
+				vertical-align:middle;
+			}
+			label{
+				vertical-align:middle;
+			}
+			html {
+				background: radial-gradient(circle at center, #1a2450, #060a1a);
+			}
+			#coins{
+				transition: all 0.25s;
+			}
+
+			html::after {
+				content: "";
+				position: fixed;
+				inset: 0;
+				background-image:
+					repeating-radial-gradient(circle at 0 0, rgba(255,255,255,0.03) 0 2px, transparent 2px 32px);
+				opacity: 0.4;
+				z-index: -1;
+				/* background-attachment: fixed; */
+				animation: apple 2s linear;
+			}
+
+			@keyframes apple {
+				0% {}
+				100% {}
+			}
+
+			#gridContainer {
+				width: 100%;
+				display: flex;
+				justify-content: center;
+			}
+
+			#machine{
+				display:grid;
+				grid-template-columns: repeat(5, 1fr); /* Creates 2 equal-width columns */
+				width: 300px;
+				gap: 2px;
+				margin:auto;
+			}
+			
+			.slot{
+				background-color: red;
+				text-align: center;
+				vertical-align: middle;
+				line-height: 15px;
+				
+				display: inline-block;
+				aspect-ratio: 1/1;
+				/* width: 55px; */
+				/* height: 55px; */
+				/* white-space: wrap; */
+				/* text-overflow: clip; */
+				border: 2px black solid;
+				transition: all 0.1s, scale 0s;
+			}
+			.slot *{
+				image-rendering: pixelated;
+				position: relative;
+				top: 50%;
+				transform: translateY(-50%); /* Moves the element up by half its own height */
+				width: 75%;
+				margin: auto;
+			}
+			.slot:hover{
+				scale:1.25;
+			}
+			button{
+				display:block;
+				width: 300px;
+				margin: auto;
+				margin-top: 1%;
+				color:white;
+				-webkit-text-stroke: 0.15em rgba(0,0,0,1);
+				cursor: url("assets/cursor/cursor_10.png"), hand;
+
+			}
+			h1{
+				text-align:center;
+			}
+
+			.overhead{
+				width:20%;margin:auto;text-align:center;font-size: 30px;background-color: transparent;
+				border:black 3px solid;
+			}
+			#inv{
+				width: 80%;margin:auto;text-align:center;
+			}
+			#stats, #currencies{
+				width: 80%;margin:auto;text-align:center;
+			}
+			#percentage{
+				font-size: 50%;
+			}
+
+			.satisfaction{
+				color: white;
+				transform-style: preserve-3d;
+				/* transition: top 0.1s, left 0.1s; */
+				/* padding: 5px; */
+				height: fit-content;
+				padding-top: 0px;
+				margin: auto;
+				font-size: 20px;
+				transform: rotate(calc(0deg - var(--degree) ));
+				text-align: center;
+				padding: 3px;
+				scale: calc(1 / var(--scale) );
+			}
+			.satisfactionWrapper{
+				background-color: var(--blue);
+				/* border: 3px solid white; */
+				position: absolute;
+				display: inline-block;
+				pointer-events: none;
+				z-index: 99999;
+				margin: none;
+				/* block-size: 5px; */
+				/* aspect-ratio: 1/1; */
+				padding: 5px;
+				scale: var(--scale);
+				
+				--degree : 0deg;
+				--scale : 2;
+				transform: rotate(var(--degree));
+
+				filter: drop-shadow(8px 8px 0px rgba(0,0,0,0.5));
+				
+			}
+
+			.softShake {
+				animation: softShake 0.5s ease;
+			}
+			@keyframes softShake {
+				0% { transform: translate(0.5px, -0.5px) rotate(0.1deg); }
+				30% { transform: translate(-0.5px, 0.5px) rotate(-0.1deg); }
+				60% { transform: translate(-0.5px, 0.5px) rotate(0.1deg); }
+				100% { transform: translate(0,0) rotate(0deg); } 
+
+				0%{
+					scale: 0.99;
+				}
+				100%{
+					scale: 1;
+				}
+			}
+
+			#mailInterface {
+				width: 50%;
+				height: 75%;
+				margin: auto;
+				position:absolute;
+				background: navy; 
+				filter: drop-shadow(8px 8px 0px rgba(0,0,0,0.5));
+			}
+			#mailInterface h2{
+				background-color: dimgray;
+				margin-top: 0px;
+				margin-bottom:5px;
+				text-align:center;
+				color:lightgrey;  
+				filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.5));
+
+			}
+			#mailInterface button{
+				width:15%;
+				/* height:25px; */
+				color:white; border:solid 3px black;
+				font-size: 100%;
+				box-shadow: 3px 3px 0px black;
+				display: inline-block;
+				float:right;
+				margin:5px;
+			}
+			button{
+				color:white; border:solid 3px black;
+				font-size: 100%;
+				box-shadow: 3px 3px 0px black;
+			}
+			#skipButton{
+				background-color:orange;
+			}
+			#rerollButton{
+				background-color:green;
+			}
+			button:hover{
+				outline: 3px white solid;
+			}
+			button:active, .symbolGetButton:active{
+				border-color:white;
+				-webkit-text-stroke: 0.15em rgba(0,0,0,0);
+				background-color: rgba(255,255,255,0.5);
+			}
+
+			#symbolChoiceContainer {
+				width: 100%;
+				display: flex;
+				/* display:none; */
+				flex-direction: row;
+				gap: 5px;
+				margin-top: 10px;
+			}
+			.symbolGetButton {
+				flex-grow: 1;
+				border: black 2px solid;
+				color: white;
+				text-align:center;
+				padding:1%;
+				/* text-shadow: 1px 1px 0px black, 1px -1px 0px black, -1px -1px 0px black, -1px 1px 0px black; */
+				filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.5));
+				transition: all 0.1s;
+				width:0; /*Fixes the width */
+			}
+			.symbolGetButton:hover{
+				outline: white 3px solid;
+				cursor: url("assets/cursor/cursor_10.png"), hand;
+				/* -webkit-text-stroke: 0.15em rgba(0,0,0,0); */
+			}
+			button:disabled{
+				text-decoration: line-through;
+				opacity:0.5;
+			}
+			sp{
+				color:red;
+			}
+			c{
+				color:yellow;
+			}
+			address{
+				color:grey;
+			}
+			c::before {
+				content: "";
+				/* You may need to adjust size and positioning using other CSS properties */
+
+				background-image: url('assets/sprites/coin.png');
+				aspect-ratio: 1/1;
+				margin:2px;
+				background-size: contain; /* Adjust as needed */
+				vertical-align: middle;
+				background-position: center center; /* Adjust as needed */
+				display: inline-block; /* Or inline-block, depending on layout */
+				height: 1em; 
+				
+			}
+
+			.symbolGetButton img {
+				width: 40%;
+				margin: auto;
+				aspect-ratio: 1/1;
+				image-rendering: pixelated;
+				/* border: 2.5px black solid; */
+				/* padding: 5px; */
+			}
+			.symbolName{
+				font-size:25px;
+			}
+			[inventory]{
+				transition: 0.15s all ease;
+				cursor: url("assets/cursor/cursor_09.png"), auto;
+			}
+			[inventory]:hover{
+				scale:2.15;
+				filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.5));   
+			}
+			#mailText{
+				/* margin:20px; */
+			}
+		</style>
+
+		<script>
+			const satisfyingWrapper = document.getElementsByClassName('satisfactionWrapper')[0];
+			const satisfyingElement = document.getElementsByClassName('satisfaction')[0];
+			
+			function snapped(value, increment) {
+				return Math.round(value / increment) * increment;
+			}
+
+			const genRanHex = size => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+			Number.prototype.clamp = function(min, max) {
+				return Math.min(Math.max(this, min), max); 
+			};
+			function getAdjacent(a, x, y, r) {
+				var minX = Math.max(x - r, 0),
+					maxX = Math.min(x + r, a[0].length - 1),
+					minY = Math.max(y - r, 0),
+					maxY = Math.min(y + r, a.length - 1),
+					xx, yy,
+					result = [];
+
+				for (yy = minY; yy <= maxY; yy++) {
+					for (xx = minX; xx <= maxX; xx++) {
+						if (x !== xx || y !== yy) {
+							result.push(a[yy][xx]);
+						}
+					}
+				}
+				return result;
+			}
+
+			function shake() {
+				$("html").removeClass("softShake");
+				document.querySelector("html").offsetHeight;
+				$("html").addClass("softShake");
+			}
+
+			function loadLocalSprite(data) {
+				var spr = new Image();
+				spr.src = data;
+				return spr;
+			}
+			function loadLocalAudio(data) {
+				var snd = new Audio(data);
+				document.body.appendChild(snd);
+				return snd;
+			}
+
+			function playSound(snd) {
+				snd.currentTime = 0;
+				snd.play();
+			}
+			function pretty(str) {
+				if (typeof str !== 'string' || str.length === 0) {
+					return str; // Handle empty or non-string inputs
+				}
+				return str.charAt(0).toUpperCase() + str.slice(1);
+			}
+
+			function getOffset(el) {
+				const rect = el.getBoundingClientRect();
+				return {
+					left: rect.left + window.scrollX,
+					top: rect.top + window.scrollY
+				};
+			}
+
+			// Source - https://stackoverflow.com/a
+			// Posted by KevynTD, modified by community. See post 'Timeline' for change history
+			// Retrieved 2025-12-05, License - CC BY-SA 4.0
+
+			function waitListener(element, listenerName) {
+				return new Promise(function (resolve, reject) {
+					var listener = event => {
+						element.removeEventListener(listenerName, listener);
+						resolve(event);
+					};
+					element.addEventListener(listenerName, listener);
+				});
+			}
+
+
+			function calculateAverage(arr) {
+				if (arr.length === 0) {
+					return 0; // Handle empty array case to avoid division by zero
+				}
+				const sum = arr.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+				return sum / arr.length;
+			}
+
+			//Values = String[], Weights = Int[];
+			function randomByWeight(values, weights) {
+				let total = 0
+			
+				// Sum total of weights
+				weights.forEach(weight => {
+					total += weight
+				})
+			
+				// Random a number between [1, total]
+				const random = Math.random() * total // [0,total]
+			
+				// Seek cursor to find which area the random is in
+				let cursor = 0
+				for (let i = 0; i < weights.length; i++) {
+					cursor += weights[i]
+					if (cursor >= random) {
+						return values[i]
+					}
+				}
+				return "never go here"
+			}
+
+
+			
+			// Version 4.0
+			const pSBC = (p, c0, c1, l) => {
+				let r, g, b, P, f, t, h, i = parseInt, m = Math.round, a = typeof (c1) == "string";
+				if (typeof (p) != "number" || p < -1 || p > 1 || typeof (c0) != "string" || (c0[0] != 'r' && c0[0] != '#') || (c1 && !a)) return null;
+				if (!this.pSBCr) this.pSBCr = (d) => {
+					let n = d.length, x = {};
+					if (n > 9) {
+						[r, g, b, a] = d = d.split(","), n = d.length;
+						if (n < 3 || n > 4) return null;
+						x.r = i(r[3] == "a" ? r.slice(5) : r.slice(4)), x.g = i(g), x.b = i(b), x.a = a ? parseFloat(a) : -1
+					} else {
+						if (n == 8 || n == 6 || n < 4) return null;
+						if (n < 6) d = "#" + d[1] + d[1] + d[2] + d[2] + d[3] + d[3] + (n > 4 ? d[4] + d[4] : "");
+						d = i(d.slice(1), 16);
+						if (n == 9 || n == 5) x.r = d >> 24 & 255, x.g = d >> 16 & 255, x.b = d >> 8 & 255, x.a = m((d & 255) / 0.255) / 1000;
+						else x.r = d >> 16, x.g = d >> 8 & 255, x.b = d & 255, x.a = -1
+					} return x
+				};
+				h = c0.length > 9, h = a ? c1.length > 9 ? true : c1 == "c" ? !h : false : h, f = this.pSBCr(c0), P = p < 0, t = c1 && c1 != "c" ? this.pSBCr(c1) : P ? { r: 0, g: 0, b: 0, a: -1 } : { r: 255, g: 255, b: 255, a: -1 }, p = P ? p * -1 : p, P = 1 - p;
+				if (!f || !t) return null;
+				if (l) r = m(P * f.r + p * t.r), g = m(P * f.g + p * t.g), b = m(P * f.b + p * t.b);
+				else r = m((P * f.r ** 2 + p * t.r ** 2) ** 0.5), g = m((P * f.g ** 2 + p * t.g ** 2) ** 0.5), b = m((P * f.b ** 2 + p * t.b ** 2) ** 0.5);
+				a = f.a, t = t.a, f = a >= 0 || t >= 0, a = f ? a < 0 ? t : t < 0 ? a : a * P + t * p : 0;
+				if (h) return "rgb" + (f ? "a(" : "(") + r + "," + g + "," + b + (f ? "," + m(a * 1000) / 1000 : "") + ")";
+				else return "#" + (4294967296 + r * 16777216 + g * 65536 + b * 256 + (f ? m(a * 255) : 0)).toString(16).slice(1, f ? undefined : -2)
+			}
+
+			async function satisfactionTextUpdate(text, element, color) {
+				try {
+					let sW = $(satisfyingWrapper).clone(true).appendTo("body");
+					let sat = sW[0].firstElementChild
+					sat.innerText = text;
+					sW[0].style.backgroundColor = `${color}`;
+					// console.log(JSON.stringify(element.style))
+					let toLeft = getOffset(element).left + (Number(55) / 4)
+					let toRight = getOffset(element).top + (Number(55) / 4)
+
+					$(element).css({ scale: 1.25 });
+					$(element).animate({ scale: 1 }, { duration: 250, queue: false });
+
+					$(sW[0]).css({ left: toLeft + "px", top: toRight + "px", opacity: 0.1, apple: 0.1, "--scale": 0.1 });
+					// satisfyingWrapper.style.setProperty("--degree", `${45 * Math.ceil(Math.random()*8)}deg`)
+					$(sW[0]).animate({ opacity: 1, apple: 1 }, {
+						duration: 250, step: () => {
+							sW[0].style.setProperty("--scale", sW[0].style.opacity);
+						},
+					}).delay(250).animate({ opacity: 0, apple: 0, top:0, left:0 }, {
+						duration: 250
+					});
+					
+
+					// shake()
+
+				} catch (error) {
+					//Ignoring errors for now, jokers error this seemingly randomly...
+					console.log("STU " + error)
+				}
+
+			}
+
+
+			const delay = (delayInms) => {
+				return new Promise(resolve => setTimeout(resolve, speed?0:delayInms));
+			};
+
+			function Rentercent(value){
+				return Math.floor(100*(value/rentPrice[player["payments"]]))
+			}
+
+		</script>
+
+		
+	</head>
+	<body>
+		<script src="js/myConsole.js"></script>
+
+		<h1 id="title">Luck be a LANdlord</h1>
+		<div class="overhead">
+			<span>Coins: <span id="coins">00</span> <span id="percentage">(%)</span></span>
+			<br>
+			<span><span id="time">?</span></span>
+		</div>
+		<br>
+		<div id="gridContainer">
+		<div id="machine">
+			</div>
+		</div>
+		<button id="lever">SPIN</button>
+		<wrapper class="satisfactionWrapper"><p class="satisfaction">+2</p></wrapper>
+		<br>
+		<p id="stats">%%%</p>
+		<p id="currencies">###</p>
+		<p id="inv">###</p>
+		<button id="remove" style="display:none;">Remove a symbol</button>
+		<button id="welcome">Welcome / Settings</button>
+		<!--  -->
+		<div popover="manual" id="mailInterface" open>
+			<h2 id="reminder">25 due in 5 spins </h2>
+			<h2 id="mailTitle">INBOX</h2>
+			<div id="skipContainer">
+				<span id="payments" style="color:white">Payments: 0/12</span>
+				<button id="skipButton">Skip</button>
+				<button id="rerollButton">Reroll</button>
+			</div>
+			<div id="symbolChoiceContainer" >
+				<div class="symbolGetButton" id="symbolGetButton1">
+					<div>
+						<p class="symbolName">Crow</p>
+						<img src="assets/sprites/crow.png">
+						<p class="symbolRarity">Common</p>
+					</div>
+				</div>
+				<div class="symbolGetButton" id="symbolGetButton2">
+					<div>
+						<p class="symbolName">Apple</p>
+						<img src="assets/sprites/apple.png">
+						<p class="symbolRarity">Rare</p>
+					</div>
+				</div>
+				<div class="symbolGetButton" id="symbolGetButton3">
+					<div>
+						<p class="symbolName">Big Ore</p>
+						<img src="assets/sprites/big_ore.png">
+						<p class="symbolRarity">Uncommon</p>
+					</div>
+				</div>
+				
+				<!-- generate other items under here -->
+			</div>
+			<div id="mailContents" hidden>
+				<p id="mailText" style="color:white">Hello, your rent payment is due.</p>
+				<button id="ok">Ok</button>
+				<br><br><br>
+			</div>
+		</div >
+		<!--  -->
+
+		<script>
+			const slots = [
+				[],
+				[],
+				[],
+				[]
+			];
+			
+			const rentSpins = [5,5,6,6,7,7,8,8,9,9,10,10,10];
+			const rentPrice = [25,50,100,150,225,300,350,425,575,625,675,777,1000];
+			const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6, "dead":-1};
+			
+			var g_reroll = 2;
+			var g_removal = 2;
+			var g_essence = 2;
+			var g_duds = 0;
+
+
+			var queuedAdditions = [];
+			var queuedDeletions = [];
+			var deletionHistory = [];
+
+			var names = [];
+			var weights = [];
+			var options = [];
+			var rarity = 0;
+			var choosingItems = false;
+			var hexxed = 0;
+
+			function imgify(symbol){
+				if(symbol.image) return symbol.image;
+				return `assets/sprites/${symbol.name.replaceAll(" ","_").toLowerCase()}.png`
+			}
+			function setSlot(x,y,a){
+				a.e = $(`#s${x}x${y}y`)
+				a.e.html(`<img src="${imgify(a.symbol)}">`);
+				a.e.css({"background-color":a.symbol.name == "empty"?"var(--empty)":"var(--pending)", "opacity": "1.0"})
+				// console.log(x,y)
+				a.x = x;
+				a.y = y;
+				slots[x][y] = a
+				a.finalOutput = 0;
+				a.bonuses = [];
+				a.tags = [];
+				return slots[x][y];
+			}
+			function adjacentSlots(x,y){
+				let adjacents = getAdjacent(slots,x,y,1);
+				return adjacents;           
+			}
+
+			async function eat(food, self){
+				let counting = 0;
+				for (element of adjacentSlots(self.y, self.x)){
+					element.tags = element.tags || [];
+					if (element.symbol.name == food && !element.tags.includes(self.id) ) {
+						element.tags.push(self.id);
+						counting += 1;
+						element.e.css("opacity", "1.0");
+						element.e.css("outline", "white 2px solid");
+						await delay(500);
+						element.e.css("opacity", "0.25");
+						await delay(500);
+						element.e.css("outline", "none");
+						destroySymbol(element)
+
+					}
+				};
+				return counting;
+			}
+			async function eatType(type, self){
+				let counting = 0;
+				for (element of adjacentSlots(self.y, self.x)){
+					element.tags = element.tags || [];
+					if (element.symbol[type] > 0 && !element.tags.includes(self.id) ) {
+						element.tags.push(self.id);
+						counting += element.symbol[type];
+						element.e.css("opacity", "1.0");
+						element.e.css("outline", "white 2px solid");
+						await delay(500);
+						element.e.css("opacity", "0.25");
+						await delay(500);
+						element.e.css("outline", "none");
+						destroySymbol(element)
+
+					}
+				};
+				return counting;
+			}  //TODO ww 
+			async function bonus(food, self, bonussy){
+				let counting = 0;
+				for (element of adjacentSlots(self.y, self.x)){
+					if (element.symbol.name == food && !element.tags.includes(self.id) ) {
+						counting += 1;
+						element.bonuses.push(bonussy);
+						// element.e.text(food);
+						element.e.css("outline", "white 2px solid");
+						await delay(500);
+						element.e.css("outline", "none");
+						element.tags.push(self.id)
+					}
+				};
+				return counting;
+			}
+			async function bonusType(food, self, bonussy){
+				let counting = 0;
+				for (element of adjacentSlots(self.y, self.x)){
+					if (element.symbol[food] && !element.tags.includes(self.id) ) {
+						counting += 1;
+						element.bonuses.push(bonussy);
+						// element.e.text(food);
+						element.e.css("outline", "white 2px solid");
+						await delay(500);
+						element.e.css("outline", "none");
+						element.tags.push(self.id)
+					}
+				};
+				return counting;
+			}
+			async function giveBonus(element, self, bonussy, del = 500){
+				if (!element.tags.includes(self.id) ) {
+					element.bonuses.push(bonussy);
+					element.e.css("outline", "white 2px solid");
+					await delay(del);
+					element.e.css("outline", "none");
+					element.tags.push(self.id)
+				}
+				return;
+			}
+			
+			function addSymbol(symbol){
+				let s = new SymbolInstance(symbol);
+				if(symbol != WAREHOUSE.EMPTY){
+					queuedAdditions.push(player.inventory[player.inventory.push(s)-1]);
+				}else{
+					player.inventory[player.inventory.push(s)-1]
+				}
+				for (const item of player.items) {
+					item.calculate(item, "onAdded", symbol);
+				}
+
+				let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
+				if (nonNothings.length < 20){
+					player.inventory.forEach((element)=>{
+						if(element.symbol.name == "empty" && player.inventory.length - nonNothings.length > 20 - nonNothings.length){
+							player.inventory = _.without(player.inventory, element);
+						}
+					});
+					// console.log(player.inventory.length - nonNothings.length, nonNothings.length)
+				}else{
+					player.inventory = nonNothings;
+				}
+				updInventory()
+				return s;
+			};
+			function destroySymbol(symbolInstance){
+				player.inventory = _.without(player.inventory, symbolInstance);
+				queuedDeletions.push(symbolInstance);
+				deletionHistory.push(symbolInstance);
+				let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
+				if(nonNothings.length < 20){
+					addSymbol(WAREHOUSE.EMPTY);
+				}
+				let doDestroy = 0;
+				if(symbolInstance.symbol.onDestroy) doDestroy = symbolInstance.symbol.onDestroy(symbolInstance) || 0
+				player.coins += doDestroy;
+				for (const item of player.items) {
+					item.calculate(item, "onDestroy", doDestroy);
+				}
+				updInventory()
+				return doDestroy
+			}
+			function removeSymbol(symbolName){
+				try {
+					player.inventory = _.without(player.inventory, player.inventory.filter((a)=>{return a.symbol.name == symbolName})[0] );
+					let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
+					if(nonNothings.length < 20){
+						addSymbol(WAREHOUSE.EMPTY);
+					}
+					updInventory()
+					player.removals--;
+					return
+				} catch (error) {
+					alert(`Failed to remove ${symbolName}! ${error}`);
+				}
+				
+			}
+			function addItem(item){
+				player.items.push(item);
+				for (const litem of player.items) {
+					litem.calculate(item, "onAddedItem", item);
+				}
+				updInventory()
+				return item;
+			};
+
+			function updInventory(){
+				let myInv = [];
+				let myItems = [];
+				let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
+				_.each(filterdInv, (value)=>{
+					let avg = Math.floor(10*calculateAverage(value["history"]))/10;
+					myInv.push(`<img inventory onclick="rID(${value.id})" title="${pretty(value.symbol.name)} 🪙${value.symbol.base || "?"}, x̄${avg}" src="${imgify(value.symbol)}">`)
+				});
+				_.each(player.items, (value)=>{
+					myItems.push(value.name)
+				});
+				$("#inv").html(`Items: ${myItems.join(", ")} <br>
+					Symbols: ${filterdInv.length} <br> 
+					${myInv.join(", ")}
+				`);
+			}
+			function rID(vID){
+				if(player.removals < 1) return;
+				if(!confirm("Delete this?")) return;
+				player.inventory = _.without(player.inventory, player.inventory.filter((a)=>{return a.id == vID})[0] );
+				let nonNothings = player.inventory.filter((a)=>{return a.symbol.name != "empty"})
+				if(nonNothings.length < 20){
+					addSymbol(WAREHOUSE.EMPTY);
+				}
+				updInventory()
+				player.removals--;
+			}
+
+			
+
+			const _player = {
+				inventory : [],
+				items : [],
+
+				status : STATES.idle,
+
+				coins : 1,
+				rerolls : 0,
+				removals : 0,
+				tokens : 0,
+
+				payments : 0,
+				floor: 1,
+				spins : rentSpins[0],
+				last: 0,
+				history: [],
+			}
+
+			const Playerhandler = {
+				get: function(target, prop) {
+					// console.log(`Getting property: ${prop}`);
+					return target[prop];
+				},
+				set: function(target, prop, value) {
+					// console.log(`Setting property: ${prop} to ${value}`);
+					switch (prop) {
+						case "coins":
+							target[prop] = value;
+							
+							$("#coins").text(target[prop])
+							$("#percentage").text(`(${Rentercent(value)}%)`);
+							$("#coins").css("color", rentPrice[target["payments"]]>value?`rgb(25,25,${(Rentercent(value)/100)*255})`:"lime");
+							if(rentPrice[target["payments"]]<=value){
+								$("html").css("cursor",`url("assets/cursor/cursor_01.png"), auto`)
+							}else if(target["payments"] >= 6){
+								$("html").css("cursor",`url("assets/cursor/cursor_02.png"), auto`)
+							}else{
+								$("html").css("cursor",`url("assets/cursor/cursor_00.png"), auto`)
+							}
+				
+							break;
+						case "status":
+							target[prop] = value;
+							$("#lever").prop("disabled", value != STATES.idle);
+							$("#welcome").prop("disabled", value != STATES.idle);
+							$("#remove").prop("disabled", value != STATES.idle || target["removals"] <= 0);
+
+							break;
+						case "spins":
+							target[prop] = Math.max(0,value);
+							$("#time").text(`${rentPrice[target["payments"]]} due in ${target[prop]} spins`)
+							$("#reminder").html(`<c>${rentPrice[target["payments"]]}</c> due in <sp>${target[prop]}</sp> spins`)
+							break;
+						case "payments":
+							target[prop] = value;
+							$("#payments").text(`${value}/12 Payments`);
+							break;
+						case "last":
+							let last = target[prop];
+							target[prop] = value;
+							let avg = Math.floor(10*calculateAverage(target["history"]))/10;
+							$("#stats").html(`↱${value} (${Rentercent(value)}%) | Δ${value-last} (${Math.floor(100*value/last)}%) | x̄${avg} (<ruby>${ Math.ceil(rentPrice[target["payments"]]/avg) } - ${Math.abs(target["spins"]-rentSpins[target["payments"]])}<rt>${Rentercent(avg)}%</rt></ruby>)`)
+							$("#stats").css("color",value>last?"lime":value==last?"white":"crimson")
+							break;
+						case "rerolls":
+						case "removals":
+						case "tokens":
+							target[prop] = value;
+							$("#currencies").html(`⚄${target["rerolls"]} ⭙${target["removals"]} ℇ${target["tokens"]}`);
+							$("#remove").prop("disabled", target["status"] != STATES.idle || target["removals"] <= 0);
+							break;
+						default:
+							target[prop] = value;
+							break;
+					}
+					return true; // Indicate success
+				}
+			};
+
+			const player = new Proxy(_player, Playerhandler);
+			player.rerolls = 0;
+
+			
+			
+
+			class SymbolInstance {
+				static allIds = 1;
+				constructor(symbol) {
+					this.symbol = symbol;
+					this.id = SymbolInstance.allIds++;
+					this.tags = [];
+					this.bonuses = [];
+					this.history = [];
+				}
+
+				async calculate(stage = "execute") {
+					let overallOutput = 0;
+					let normal = 0;
+					switch (stage) {
+						case "calculate":
+							normal = this.symbol.calculate?await this.symbol.calculate(this):0;
+							overallOutput += normal;
+							break;
+						case "calculateLater":
+							normal = this.symbol.calculateLater?await this.symbol.calculateLater(this):0;
+							overallOutput += normal;
+							break;
+						case "execute":
+							let itemMod = 0;
+							let base = this.symbol.base || 0;
+							base += this.symbol.execute?await this.symbol.execute(this):0;
+							player.items.forEach(item => {
+								itemMod += item.calculate(item, this, base);
+							});
+							overallOutput += itemMod + base;
+					
+						default:
+							break;
+					}
+					 
+					return overallOutput;
+				}
+			}
+			$('#mailInterface').draggable({ handle: '#reminder', revert: true });
+
+			var started = false;
+			async function init(){
+				_.times(20, (n)=>{
+					let x = Math.floor(n/5);
+					let y = n%5;
+					let currentSlot = $(`<div class="slot" id="s${x}x${y}y"></div>`);
+					$("#machine").append(currentSlot);
+					addSymbol(WAREHOUSE.EMPTY);
+					setSlot(x, y, player.inventory[player.inventory.length - 1]);
+				});
+				// _.each(WAREHOUSE,(n)=>{addSymbol(n);});
+				setSlot(1,0,addSymbol(WAREHOUSE.CAT))
+				setSlot(2,1,addSymbol(WAREHOUSE.CHERRY));
+				setSlot(1,2,addSymbol(WAREHOUSE.PEARL));
+				setSlot(2,3,addSymbol(WAREHOUSE.FLOWER));
+				setSlot(1,4,addSymbol(WAREHOUSE.COIN));
+				satisfyingWrapper.style.display = 'none';
+
+				// if ($.fn.draggable) {
+				// }
+
+				// setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
+				// setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
+				// setSlot(1,4,addSymbol(WAREHOUSE.THREE_SIDED_DIE));
+
+
+				// player.items.push(STOREROOM.BLACK_CAT);
+				await welcome();
+				if ( player.floor >= 2 ){
+					rentPrice[6] += 25;
+					if ( player.floor >= 3 ) rentPrice[7] += 25;
+					if ( player.floor >= 4 ) g_removal = 1;
+					if ( player.floor >= 5 ) setSlot(3,2,addSymbol(WAREHOUSE.DUD));
+					if ( player.floor >= 6 ) rentPrice[9] += 25;
+					if ( player.floor >= 7 ) addSymbol(WAREHOUSE.DUD);
+					if ( player.floor >= 8 ) rentPrice[10] += 25;
+					if ( player.floor >= 9 ) g_reroll = 1;
+					if ( player.floor >= 10) g_duds = 25;
+					if ( player.floor >= 11) {addSymbol(WAREHOUSE.DUD)} // Landlord has 250 more HP
+					if ( player.floor >= 12) addSymbol(WAREHOUSE.DUD);
+					if ( player.floor >= 13) {addSymbol(WAREHOUSE.DUD)} // Landlord has 750 more HP (Replaces Floor 11 effect)
+					if ( player.floor >= 14) g_duds = 20;
+					if ( player.floor >= 15) {addSymbol(WAREHOUSE.DUD)} // Landlord uses more challenging fine print
+					if ( player.floor >= 16) g_essence = 1;
+					if ( player.floor >= 17) {addSymbol(WAREHOUSE.DUD)} // Landlord uses 2x more fine print
+					if ( player.floor >= 18) rentPrice[9] += 25
+					if ( player.floor >= 19) g_duds = 15;
+					if ( player.floor >= 20) {addSymbol(WAREHOUSE.SQUIGGLE)} // Landlord uses 3x more fine print (Replaces Floor 17 effect)
+				}
+				eval(localStorage.javascript || "");
+				started = true;
+			}
+			async function email(title,message){
+				player.status = STATES.reading;
+				$("#mailTitle").html(title);
+				$("#symbolChoiceContainer").css("display","none");
+				$("#mailContents")[0].hidden = false;
+				
+				$("#mailText").html(message);
+				$("#rerollButton")[0].disabled = true;
+				$("#skipButton")[0].disabled = true;
+				
+
+				$("#mailInterface")[0].showPopover();
+				await waitListener($("#ok")[0], "click");
+				$("#mailInterface")[0].hidePopover();
+				$("#symbolChoiceContainer").css("display","flex");
+				$("#mailContents")[0].hidden = true;
+				$("#skipButton")[0].disabled = false;
+				player.status = STATES.idle;
+			}
+			
+			async function spin(){
+				if (player.status != STATES.idle) return;
+				// await email("a","b");
+				// await email("d","c");
+
+				player.spins -= 1;
+				player.coins -= 1;
+				if ( player.coins < 0 ){
+					// await email("Your landlord.","You don't have enough money to spin and you've been evicted!");
+					// return;
+					// this funcitonality isn't even real, supposedly?
+				}
+				
+				player.status = STATES.spinning;
+				let modifiedInventory = player.inventory;
+				queuedAdditions = [];
+				queuedDeletions = [];
+				let x,y;
+				for (let n = 0; n < 20; n++) {
+					let chosen = _.sample(modifiedInventory);
+
+					$(`#s${x}x${y}y`).css("scale", "1");
+					x = Math.floor(n/5);
+					y = n%5;
+					$(`#s${x}x${y}y`).css("scale", "1.1");
+					setSlot(x,y, chosen);
+					
+					modifiedInventory = _.without(modifiedInventory, chosen);
+					await delay(20);
+					
+				}
+				$(`#s${x}x${y}y`).css("scale", "1");
+
+
+				player.status = STATES.counting;
+				let predictedCoins = 0;
+				let collective = [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]];
+				let countedNumbers = [];
+				let countedIDs = [];
+				let iterationCounted = {};
+				let iteration = 0;
+
+				for (const item of player.items) {
+					let itemMod = item.calculate(item, "beforeCount", predictedCoins);
+					predictedCoins += itemMod;
+					player.coins += itemMod;
+					if(itemMod != 0) {
+						satisfyingWrapper.style.display = 'inline-block';
+						await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#inv")[0], `rgba(${itemMod*25},255,0,0.75)`);
+						await delay(500);
+					}
+				}
+				try {
+					
+					let empties = false;
+					//before hand calculations
+				do{
+					empties = false;
+					//Attempt to resolve queue
+					for (const rows of slots) {
+						for (const slot of rows) {
+							//deletions
+							if (queuedDeletions.length > 0){
+
+								for (let index = queuedDeletions.length - 1; index >= 0 ; index--) {
+									const queueCanidate = queuedDeletions[index];
+									if (queueCanidate == slot){
+										let tempoEmpty =  new SymbolInstance(WAREHOUSE.EMPTY);
+										tempoEmpty.finalOutput = 0;
+										queueCanidate.e.css({"outline":"red 5px dotted","opacity":"0.25"});
+										await delay(350);
+										queueCanidate.e.css({"outline":"none","opacity":"1"});
+										// collective[slot.x][slot.y] += slot.finalOutput; //I don't think this is OG game behaviour?
+										collective[slot.x][slot.y] += slot.symbol.onDestroy?slot.symbol.onDestroy(slot):0;
+										setSlot(queueCanidate.x, queueCanidate.y, tempoEmpty);
+										
+										queuedDeletions = _.without(queuedDeletions, queueCanidate);
+									}
+								}
+							}
+							//additions
+							if (slot.symbol == WAREHOUSE.EMPTY && queuedAdditions.length > 0){
+								slot.e.css({"outline":"green 5px dotted","opacity":"0.25"});
+								setSlot(slot.x, slot.y, queuedAdditions[0]);
+								await delay(350);
+								slot.e.css({"outline":"none","opacity":"1"});
+								queuedAdditions.shift();
+								iteration++;
+							}
+							if(slot.symbol == WAREHOUSE.EMPTY){
+								empties = true;
+							}
+						}
+					}
+					//Run calculations
+					for (const rows of slots) {
+						for (const slot of rows) {
+							if (!slot.symbol.skip && iterationCounted[slot.id] != iteration){
+								slot.e.css({"outline":"black 3px solid"});
+								let output = await slot.calculate("calculate");
+								slot.e.css({"outline":"none"});
+								// slot.finalOutput += output;
+								iterationCounted[slot.id] = iteration
+								collective[slot.x][slot.y] += output;
+							}
+						}
+					}
+					//Run single-time executions
+					for (const rows of slots) {
+						for (const slot of rows) {
+							
+							if (!countedIDs.includes(slot.id)){
+								slot.e.css({"outline":"black 3px solid"});
+								let output = await slot.calculate("execute");
+								slot.e.css({"outline":"none"});
+								slot.finalOutput += output;
+							}
+						}
+					}
+					//Handle bonuses
+					for (const rows of slots) {
+						for (const slot of rows) {
+							if (true){
+								if (slot.bonuses){
+									slot.bonuses.forEach((bonussy,ind) => { //Additives
+										// alert(bonussy)
+										if(typeof bonussy == typeof 32){
+											let output = bonussy;
+											slot.bonuses[ind] = 0;
+											slot.finalOutput += output;
+										}
+									});
+									slot.bonuses.forEach((bonussy,ind) => { //Multipliers
+										if(typeof bonussy == typeof "string"){
+											let multiplier = Number(bonussy.substring(1));
+											slot.bonuses[ind] = 0;
+											slot.finalOutput *= multiplier;
+										}
+									});
+								}
+								// collective[slot.x][slot.y] += slot.finalOutput;
+							}
+						}
+					}
+					
+					
+					//Run later calculations (for symbols that use finalOutput)
+					for (const rows of slots) {
+						for (const slot of rows) {
+							if (!countedIDs.includes(slot.id)){
+								let output = await slot.calculate("calculateLater");
+								slot.finalOutput += output;
+								collective[slot.x][slot.y] += slot.finalOutput;
+								// if(slot.finalOutput)alert(slot.finalOutput)
+								countedIDs.push(slot.id)
+
+							}
+							if(slot.symbol == WAREHOUSE.EMPTY){
+								empties = true;
+							}
+						}
+					}
+					
+				}while((queuedAdditions.length && empties) || queuedDeletions.length)
+
+
+				let uniqueValues = _.sortBy(_.uniq(collective.flat()), (a)=>{return a})
+				for (const val of uniqueValues){
+					if (!val) continue;
+					for (const rows of slots) {
+						for (const slot of rows) {
+							slot.e[0].title = `This slot gave ${collective[slot.x][slot.y]} coin${collective[slot.x][slot.y]!=1?"s":""}`;
+							if (collective[slot.x][slot.y] == val){
+								// alert('a')
+								let output = collective[slot.x][slot.y];
+								// await delay(countedNumbers.includes(output)?0:100);
+								slot.e.css({"background-color":"blue", "outline":"red 3px solid"});
+								satisfyingWrapper.style.display = 'none';
+								slot.history.push(output);
+								slot.e.css({"background-color":`rgba(0,${25*output},255,0.5)`, "z-index":"15"});
+								// await delay(50);
+								player.coins += output;
+								predictedCoins += output; 
+								// slot.e.html((u,l)=>{return l+"<br>+"+output});
+								satisfyingWrapper.style.display = 'inline-block';
+								if(output > 0) satisfactionTextUpdate(output, slot.e[0], `rgba(${25*output},255,0,0.75)`);
+								else if (output < 0)  satisfactionTextUpdate(output, slot.e[0], `rgba(255,0, 0,0.75)`);
+								slot.e.css({"outline":"none", "z-index":"1"});
+								countedNumbers.push(output);
+
+							}
+						}
+					}
+					await delay(250);   
+				}
+				let oldPredicted = predictedCoins;
+				for (const item of player.items) {
+					let itemMod = item.calculate(item, "onCount", oldPredicted);
+					predictedCoins += itemMod;
+					player.coins += itemMod;
+					if(itemMod != 0) {
+						await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#inv")[0], `rgba(${25*itemMod},255,0,0.75)`);
+						await delay(500);
+					}
+				}
+				} catch (error) {
+					alert(error)
+				}
+				player.history.push(predictedCoins)
+				player.last = predictedCoins;
+				if(g_duds != 0){
+					if ( player.spins % g_duds == 0 ) addSymbol(WAREHOUSE.DUD);
+				}
+
+				await delay(1000);
+				$(".satisfactionWrapper").remove()
+				satisfyingWrapper.style.display = 'none';
+
+				// Payment
+				if(player.spins == 0){
+					await email("Your landlord.",`Hello,<br> Your rent is due, pay up.<br>Thanks,<br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>` );
+					player.coins -= rentPrice[player.payments];
+					if(player.coins < 0){
+						document.write("Your rent is late and you are being evicted. GAME OVER! <br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>");
+						return;
+					}
+					player.payments += 1;
+
+					player.spins = rentSpins[player.payments]
+					await email("Your landlord.",`Hello,<br> Your rent has increased to <c>${rentPrice[player.payments]}</c>, and is due in <sp>${player.spins} spins</sp>.<br>Good luck,<br>-Your Landlord<br> <address>Landy_McLandlord@bouncy.mail</address>`)
+					
+					if(player.payments >= 4 && player.payments % 2 == 0){
+						player.rerolls += g_reroll;
+						player.tokens += g_essence;
+						player.removals += g_removal;
+						await email("New Email",`Hello Comrade,<br> Your local mutual aid network has heard of your rent situation.<br> To help with your trials, we are giving you reroll tokens, essence tokens, and removal tokens to help defeat your landlord.<br>Stay strong,<br><address style="color:red">Commie_McComrade@bouncy.mail</address>`)
+					}
+					
+					// player.history = [];
+					giveItemOptions()
+
+					
+				}else{
+					giveOptions()
+				}
+
+			}
+			
+			function toRarity(a){
+				switch (a) {
+					case 0:
+						return "Common"
+						break;
+					case 1:
+						return "Uncommon"
+						break;
+					case 2:
+						return "Rare"
+						break;
+					case 3:
+						return "Very Rare"
+						break;
+					default:
+						return "Special"
+						break;
+				}
+			}
+			function RarityToWeight(a){
+				let shinies = player.inventory.filter((a)=>{return a.symbol == WAREHOUSE.SHINY_PEBBLE}).length;
+				let tediums = player.inventory.filter((a)=>{return a.symbol == WAREHOUSE.HEX_OF_TEDIUM}).length;
+				
+				switch (a) {
+					case 0:
+						return 120 + (tediums * 10)
+						break;
+					case 1:
+						return 5 + (player.payments * 5) + (shinies*10)
+						break;
+					case 2:
+						return 3 + (player.payments * 3) + (shinies*5)
+						break;
+					case 3:
+						return 1 + (player.payments * 2) + shinies
+						break;
+					default:
+						return 0
+						break;
+				}
+			}
+
+			
+
+			function giveOptions(rrarity = 0) {
+				player.status = STATES.choosing;
+				 choosingItems = false;
+				 names = [];
+				 weights = [];
+				 options = [];
+				 rarity = rrarity
+
+					_.each(WAREHOUSE, (value, key)=>{
+						// alert(JSON.stringify(value));
+						if(value.rarity > -1 && ( rarity == 0 || (rarity != 0 && value.rarity >= rarity))){
+							names.push(key);
+							weights.push(RarityToWeight(value.rarity));
+						}
+					});
+					_.times(3, function(n) {
+						let result = randomByWeight(names, weights);
+						if(WAREHOUSE[result]){
+							options.push(result);
+						}
+						weights.splice(names.indexOf(result),1)
+						names.splice(names.indexOf(result),1)
+					});
+					
+					$("#skipButton")[0].disabled = false;
+					if ( hexxed == 1){
+						email("Choose a SYMBOL..?", "You've been HEXED! Your symbols are nowhere to be found...");
+						hexxed = 0;
+						return;
+					}else if ( hexxed == 2){
+						$("#skipButton")[0].disabled = true;
+					}
+					$("#mailTitle").text("Choose a SYMBOL!");
+					$("#payments").text(`${player.payments}/12 Payments |${RarityToWeight(0)}|${RarityToWeight(1)}|${RarityToWeight(2)}|${RarityToWeight(3)}|`);
+					$(".symbolGetButton").css("backgroundColor","rgba(25,255,25,0.25)");
+
+					$("#symbolGetButton1 .symbolName").text(pretty(WAREHOUSE[options[0]].name));
+					$("#symbolGetButton1 img")[0].src = imgify(WAREHOUSE[options[0]]);
+					$("#symbolGetButton1 .symbolRarity").html(`${toRarity(WAREHOUSE[options[0]].rarity)} <c>${WAREHOUSE[options[0]].base || "?"}</c>`);
+
+					$("#symbolGetButton2 .symbolName").text(pretty(WAREHOUSE[options[1]].name));
+					$("#symbolGetButton2 img")[0].src = imgify(WAREHOUSE[options[1]]);
+					$("#symbolGetButton2 .symbolRarity").html(`${toRarity(WAREHOUSE[options[1]].rarity)} <c>${WAREHOUSE[options[1]].base || "?"}</c>`);
+
+					$("#symbolGetButton3 .symbolName").text(pretty(WAREHOUSE[options[2]].name));
+					$("#symbolGetButton3 img")[0].src = imgify(WAREHOUSE[options[2]]);
+					$("#symbolGetButton3 .symbolRarity").html(`${toRarity(WAREHOUSE[options[2]].rarity)} <c>${WAREHOUSE[options[2]].base || "?"}</c>`);
+
+					$("#rerollButton").text(player.rerolls);
+					$("#rerollButton")[0].disabled = !player.rerolls;
+
+					$("#mailInterface")[0].showPopover();
+			}
+			function giveItemOptions() {
+				player.status = STATES.choosing;
+				choosingItems = true;
+				// alert("apple")
+				names = [];
+				weights = [];
+				options = [];
+				_.each(STOREROOM, (value, key)=>{
+					// alert(JSON.stringify(value)); ;
+					if(value.rarity > -1 && (!player.items.includes(value) || _.filter(STOREROOM, (a)=>{return !player.items.includes(a)}).length < 3)){
+						names.push(key);
+						weights.push(RarityToWeight(value.rarity));
+					}
+				});
+				_.times(3, function(n) {
+					let result = randomByWeight(names, weights);
+					if(STOREROOM[result]){
+						options.push(result);
+					}
+					weights.splice(names.indexOf(result),1)
+					names.splice(names.indexOf(result),1)
+				});
+				// let choice = prompt(`Add an ITEM!:\n1: ${STOREROOM[options[0]].name} - ${descriptions[options[0]] || ""}\n2: ${STOREROOM[options[1]].name} - ${descriptions[options[1]] || ""}\n3: ${STOREROOM[options[2]].name} - ${descriptions[options[2]] || ""}\n4: skip`);
+				// if(choice < 4 && STOREROOM[options[choice-1]]){
+				//     addItem(STOREROOM[options[choice-1]]);
+				// }
+				$("#mailTitle").text("Choose an ITEM!");
+				$(".symbolGetButton").css("backgroundColor","rgba(0, 255, 47, 0.4)");
+
+				$("#symbolGetButton1 .symbolName").text(pretty(STOREROOM[options[0]].name));
+				$("#symbolGetButton1 img")[0].src = imgify(STOREROOM[options[0]]);
+				$("#symbolGetButton1 .symbolRarity").text(toRarity(STOREROOM[options[0]].rarity));
+
+				$("#symbolGetButton2 .symbolName").text(pretty(STOREROOM[options[1]].name));
+				$("#symbolGetButton2 img")[0].src = imgify(STOREROOM[options[1]]);
+				$("#symbolGetButton2 .symbolRarity").text(toRarity(STOREROOM[options[1]].rarity));
+
+				$("#symbolGetButton3 .symbolName").text(pretty(STOREROOM[options[2]].name));
+				$("#symbolGetButton3 img")[0].src = imgify(STOREROOM[options[2]]);
+				$("#symbolGetButton3 .symbolRarity").text(toRarity(STOREROOM[options[2]].rarity));
+
+				$("#rerollButton")[0].disabled = true;
+				$("#mailInterface")[0].showPopover();
+			}
+			function choose(choice) {
+				if(player.status != STATES.choosing) return;
+				
+				if(choosingItems){
+					if(choice < 4 && STOREROOM[options[choice-1]]){
+						addItem(STOREROOM[options[choice-1]]);
+					}
+					giveOptions(1);
+					return;
+				}else{
+					if(choice < 4 && WAREHOUSE[options[choice-1]]){
+						addSymbol(WAREHOUSE[options[choice-1]]);
+					}else if(choice == 5 && player.rerolls != 0){
+						player.rerolls--;
+						giveOptions(rarity);
+						return;
+					}
+				}
+			   
+
+				$("#mailInterface")[0].hidePopover();
+				player.status = STATES.idle;
+			}
+			
+			
+		   
+
+			$('#lever').on("click", function () {
+				if ($("#lever")[0].disabled) return;
+				spin();
+			});
+			$("#stats").on("click", function () {
+				player.history = [];
+				alert("Average history cleared");
+			});
+			$("#remove").on("click", function (){
+				if ($("#remove")[0].disabled) return;
+				let myInv = [];
+				let filterdInv = player.inventory.filter((a)=>{return a.symbol.name != "empty"});
+				_.each(filterdInv, (value)=>{
+					myInv.push(value.symbol.name)
+				});
+				if (player.removals > 0){
+					removeSymbol(prompt(myInv.join(", ")));
+				}else{
+					alert("You have no removal tokens!")
+				}
+			});
+			$("#symbolGetButton1").on("click", function () {
+				if ($("#symbolGetButton1")[0].disabled) return;
+				choose(1);
+			});
+			$("#symbolGetButton2").on("click", function () {
+				if ($("#symbolGetButton2")[0].disabled) return;
+				choose(2);
+			});
+			$("#symbolGetButton3").on("click", function () {
+				if ($("#symbolGetButton3")[0].disabled) return;
+				choose(3);
+			});
+			$("#skipButton").on("click", function () {
+				if ($("#skipButton")[0].disabled) return;
+				choose(4);
+			});
+			$("#rerollButton").on("click", function () {
+				if ($("#rerollButton")[0].disabled) return;
+				choose(5);
+			});
+			var dontRegister = false;
+			$("#welcome").on("click", welcome);
+			async function welcome(){
+				dontRegister = true;
+				await email("Your landlord.",`
+				Enjoy your stay in our apartment complex. It comes with a complimentary slot machine. You can use it to get 🪙 and pay your rent. Speaking of which, your rent is <c>${rentPrice[player.payments]}</c> and is due in <sp>${player["spins"]} spins</sp>. <br> 
+				Good luck,<br>
+				-Your Landlord<br>
+				<address>Landy_McLandlord@bouncy.mail</address><br>
+				<a href="https://github.com/TyconXon/Luck-Be-a-LAN-lord">Recreation by Maximus Fayte Miller (check out my other games!)</a><br>
+				<a href="https://trampolinetales.com/">Original game by TrampolineTales (buy their games!)</a><br>
+				${Object.keys(WAREHOUSE).length} symbols out of 152 <i>(${Math.round(100*Object.keys(WAREHOUSE).length/152)}%)</i> complete <br>
+				${Object.keys(STOREROOM).length} items out of 227 <i>(${Math.round(100*Object.keys(STOREROOM).length/227)}%)</i> complete <br>
+
+				<br>
+				<h2>Settings</h2>
+				<button onclick="changeSettings()">Submit</button>
+			
+				<p>Press F2 at any time to reset your settings. Press SPACE to continue.</p>
+			
+				<label for="floor">Floor (difficulty):</label>
+				<select id="floorIn" ${started?"disabled":""} name="floor" value="${localStorage.floor}">
+					${genFloors()}
+				</select>
+				
+				<br><hr>
+				<textarea id="JS" placeholder="Javascript">${localStorage.javascript || ""}</textarea>
+				<textarea id="CSS" placeholder="CSS">${localStorage.cascadingStyleSheets || ""}</textarea>
+				
+				`);
+				dontRegister = false;
+				changeSettings();
+			}
+			$("html").append("<style>"+ localStorage.cascadingStyleSheets || "" +"</style>"); 
+			// player.floor = Number(localStorage.floor);
+			
+			function changeSettings(){
+				localStorage.javascript = $("#JS")[0].value;
+				localStorage.cascadingStyleSheets = $("#CSS")[0].value;
+				localStorage.floor = $("#floorIn")[0].value;
+				player.floor = Number(localStorage.floor);
+				// eval($("#JS")[0].value);
+				$("html").append("<style>"+$("#CSS")[0].value+"</style>");
+			}
+			function genFloors(){
+				let finString = "";
+				_.times(20, function(x) {
+				  finString += `<option value="${x+1}" ${x+1==localStorage.floor?"selected":""}>${x+1}</option>`
+				})
+				return finString;
+			}
+			
+			var speed = false;
+			document.addEventListener("keyup", ev => {
+				if (ev.key == "Alt") speed = false;
+			});
+			document.addEventListener("keydown", ev => {
+				if (dontRegister) {
+					if(ev.key == " " && document.activeElement.tagName != "TEXTAREA") $("#ok").click();
+					if(ev.key == Number(ev.key) && ev.key != " " && document.activeElement.tagName != "TEXTAREA" && !$("#floorIn")[0].disabled) {
+						ev.preventDefault();
+						$("#floorIn")[0].value = ev.ctrlKey?Number(ev.key)+10:ev.key == "0"?20:ev.key
+					}
+					if(ev.key == "Enter" && ev.altKey) changeSettings();
+					return;
+				}
+				switch (ev.key)
+				{
+					case " ":
+						ev.preventDefault();
+						if(player.status == STATES.idle) spin();
+						else if(player.status == STATES.reading) $("#ok").click();
+						break;
+					case "Backspace":
+						$("#remove").click();
+						break;
+					case "1":
+						$("#symbolGetButton1").click();
+						break;
+					case "2":
+						$("#symbolGetButton2").click();
+						break;
+					case "3":
+						$("#symbolGetButton3").click();
+						break;
+					case "5":
+					case "s":
+					case "S":
+						$("#skipButton").click();
+						break;
+					case "4":
+					case "r":
+					case "R":
+						$("#rerollButton").click();
+						break;
+					case "=":
+						$("#stats").click();
+						break;
+					case "Alt":
+						speed = true
+						break;
+					case "F2":
+						localStorage.clear();
+						break;
+				}
+			});
+			//{
+				class Symbol {
+					static warehouse = [];
+					constructor(parameters){
+						// base, execute, calculate, calculateLater
+						// let requiredParameters = ["name", "rarity", "calculate"];
+						// requiredParameters.forEach(element => {
+						//     if (!Object.keys(parameters).includes(element)) {
+						//         console.error("Symbol parameters doesn't include " + element);
+						//     }
+						// });
+						for (const [key, value] of Object.entries(parameters)) {
+							this[key] = value
+						}
+
+						this.id = Symbol.warehouse.push(this) - 1;
+						
+					}
+
+				}
+				const descriptions = {
+					// CAT: "$1, $9 for each milk it drinks",
+					// ANCHOR: "$1, $4 if in corner",
+					// BANANA: "$1, adds peel when destroyed",
+					// BEE: "$1, +$1 on flower",
+					// BOUNTY_HUNTER: "$1, destroys thiefs for $20",
+					// BUBBLE: "$2, pops after 3 spins",
+					// COAL: "$0, your christmas present",
+					// CRAB: "$1, more for each other crab in row",
+					// CROW: "$2, $-3 every 4 spins",
+					// CULTIST: "$0 + number of cultists on board",
+					// DOG: "$1, $2 if next to a human",
+					// DWARF: "$1, drinks drunk give 10x value",
+					// EGG: "$1 (WIP)",
+					// GAMBLER: "$1, when destroyed: gives 2x times appeared on board",
+					// GOLDFISH: "$1, pops bubbles for $15",
+					// KEY: "$1, unlocks boxes then destroys itself",
+					// LIGHT_BULB: "$1, +$value of rocks nearby. destroys itself after 5 shines",
+					// LOCKBOX: "$1, contains $15 inside",
+					// MAGPIE: "$-1, $9 every 4 spins",
+					// MINER: "$1, destroys adjacent ores for $20",
+					// MONKEY: "$1, eats bananas for $6 each",
+					// ORE: "$1, contains a gem inside",
+					// OWL: "$1, +$1 every 3 spins",
+					// OYSTER: "$1, 20% to add a pearl",
+					// PRESENT: "$0, contains 10. destroys after 12 spins",
+					// SNAIL: "$0, $5 every 4 spins",
+					// THREE_SIDED_DIE: "rolls between $1 and $3, destroys gamblers on $1",
+					// TODDLER: "$1, gives +$6 for each present, candy, or pinata it destroys",
+					// TURTLE: "$0, $4 every 3 spins",
+
+				};
+				const WAREHOUSE = {
+					EMPTY : new Symbol({name: "empty", rarity: -1, skip:1, base:0}),
+					DUD : new Symbol({name: "dud", rarity: -1, skip:1, base:0}),
+					SQUIGGLE : new Symbol({name: "squiggle", rarity: -1, base:-1}),
+
+					CAT: new Symbol({name: "cat", rarity: 0, base:1, calculate: async (self)=>{
+						return 9 * await eat("milk", self); 
+					}, beast: 1}),
+
+					MILK: new Symbol({name: "milk", rarity: 0, base:1, food: 1}),
+
+					ANCHOR: new Symbol({name: "anchor", rarity: 0, base:1, calculate: async(self)=>{
+						if (((self.x == 3 || self.x == 0) && (self.y == 0 || self.y == 4))){
+							return 4;
+						}
+						return 0;
+					}, aquatic: 1}),
+
+					BANANA: new Symbol({name: "banana", rarity: 0, base:1, onDestroy: (self)=>{
+						addSymbol(WAREHOUSE.BANANA_PEEL);
+					}, monkeyLikes: 1, fruit: 1, food: 1,}),
+
+					BANANA_PEEL: new Symbol({name: "banana peel", rarity: 0, base:1}),
+
+					BEE: new Symbol({name: "bee", rarity: 0, base:1, calculate: async(self)=>{
+						return await bonus("flower", self, "x2");
+					}, beast: 1}),
+
+					BEER: new Symbol({name: "beer", rarity: 0, base:1, alch: 1, food: 1}),
+					
+					BOUNTY_HUNTER: new Symbol({name: "bounty hunter", rarity: 0, base:1, calculate: async(self)=>{
+						return await eat("thief", self) * 20 ; 
+					}, human: 1}),
+
+					BUBBLE: new Symbol({name: "bubble", rarity: 0, base:2, execute: async(self)=>{
+						self.timer = self.timer - 1 || 4;
+						if(self.timer == 1){
+							   
+							destroySymbol(self);
+						}   
+						return 0;
+					}, babyLikes: 1}),
+
+					CANDY: new Symbol({name: "candy", rarity: 0, base:1, babyLikes: 1,}),
+
+					CHEESE: new Symbol({name: "cheese", rarity: 0, base:1, richLikes:1, food: 1}),
+
+					CHERRY: new Symbol({name: "cherry", rarity: 0, base:1,fruit: 1, food: 1,}),
+
+					COAL: new Symbol({name: "coal", rarity: 0, base:0, execute: async(self)=>{
+						self.timer = self.timer - 1 || 21;
+						if(self.timer == 1){
+							destroySymbol(self);
+											 
+						}
+						return 0;   
+					}}),
+
+					COIN: new Symbol({name: "coin", rarity: 0,  base:1, }),
+
+					CRAB: new Symbol({name: "crab", rarity: 0, base:1, execute: async(self)=>{
+						let countingCoins = 0;
+						for (element of slots[self.x]){
+							if (element.symbol.name == "crab"){
+								countingCoins+=1;
+							}
+						}
+						return countingCoins-1;
+					}, beast: 1,aquatic:1}),
+
+					CROW: new Symbol({name: "crow", rarity: 0, execute: async(self)=>{
+						self.timer = self.timer - 1 || 5;
+						if(self.timer == 1){
+							return -3;
+						}
+						return 2;   
+					}, beast: 1,bird:1,}),
+
+
+					CULTIST: new Symbol({name: "cultist", rarity: 0, base:0,  execute: async(self)=>{
+						let countingCoins = -1;
+						slots.forEach(row => {
+							countingCoins += _.filter(row, (value) => {
+							return value.symbol.name == "cultist";
+							}).length
+						});
+						return countingCoins;
+					}, human: 1}),
+					
+					DOG: new Symbol({name: "dog", rarity: 0, base:1,  execute: async(self)=>{
+
+						for (element of adjacentSlots(self.y, self.x)){
+							if (element.symbol.human) {
+								element.e.css("outline", "white 2px solid");
+								await delay(500);
+								element.e.css("outline", "none");
+								return 2;
+							}
+						};
+
+						return 0;
+					}, beast: 1}),
+
+					DWARF: new Symbol({name: "dwarf", rarity: 0, base:1, calculateLater: async (self)=>{
+						
+						let countingCoins = 0;
+						for (element of adjacentSlots(self.y, self.x)){
+							if (element.symbol.alch) {
+								countingCoins += await element.finalOutput * 10;
+								element.e.css("opacity", "1.0");                 
+								element.e.css("outline", "white 2px solid");
+								await delay(500);
+								element.e.css("opacity", "0.25");                 
+								await delay(500);
+								element.e.css("outline", "none");
+								destroySymbol(element)
+							}
+						};
+
+						return countingCoins;    
+					}, human:1}),
+
+					EGG: new Symbol({name: "egg", rarity: 0, base:1,  execute: async(self)=>{
+						let result = _.random(1,10);
+						if(result == 1){
+							destroySymbol(self);
+							addSymbol(WAREHOUSE.CHICK)
+						}
+						return 0;
+					}, food: 1}),
+					CHICK: new Symbol({name: "chick", rarity: 1, base:1,  execute: async(self)=>{
+						let result = _.random(1,10);
+						if(result == 1){
+							destroySymbol(self);
+							addSymbol(WAREHOUSE.CHICKEN)
+						}
+						return 0;
+					}, beast: 1}),
+					CHICKEN: new Symbol({name: "chicken", rarity: 2, base:2,  execute: async(self)=>{
+						let result = _.random(1,20);
+						if(result == 1){
+							addSymbol(WAREHOUSE.EGG)
+						}
+						return 0;
+					}, beast: 1}),
+
+					FLOWER: new Symbol({name: "flower", rarity: 0,  base:1, }),
+
+					GAMBLER: new Symbol({name: "gambler", rarity: 0, base:1, execute: async(self)=>{
+						self.savings = self.savings + 2 || 2;
+						return 0;    
+					}, onDestroy: (self)=>{
+						return self.savings || 2;
+					},  human: 1}),
+
+					GOLDFISH: new Symbol({name: "goldfish", rarity: 0, base:1,  calculate: async (self)=>{
+						return (15 * await eat("bubble", self));    
+					}, beast: 1,aqautic:1}),
+
+					GOOSE: new Symbol({name: "goose", rarity: 0, base:1, bird: 1, beast: 1}),
+
+					KEY: new Symbol({name: "key", rarity: 0, base:1, calculate: async(self)=>{
+						let findBoxes = await eatType("box", self); 
+						if (findBoxes > 0){
+							destroySymbol(self);
+						}
+						return findBoxes;
+					}}),
+
+					LIGHT_BULB: new Symbol({name: "light bulb", rarity: 0, base:1,execute: async(self)=>{
+						self.uses = self.uses - 1 || 6;
+						if(self.uses <= 1){
+							destroySymbol(self)
+							 
+						}
+						return 0;
+					}, calculate: async(self)=>{
+						let result = await bonusType("rock", self, "x2");
+						self.uses = self.uses - result || 6;
+						if(self.uses <= 1){
+							destroySymbol(self)
+							 
+						}
+						return 0;    
+					}}),
+
+					LOCKBOX: new Symbol({name: "lockbox", rarity: 0, base:1,  box: 15}),
+
+					MAGPIE: new Symbol({name: "magpie", rarity: 0, base:0, execute: async(self)=>{
+						self.timer = self.timer - 1 || 5;
+						if(self.timer == 1){
+							return 9;
+						}
+						return -1;  
+					}, bird: 1, beast: 1}),
+
+					MINER: new Symbol({name: "miner", rarity: 0,base:1, calculate: async (self)=>{
+						return 20 * await eatType("ore", self);   
+					}, human:1}),
+
+					MONKEY: new Symbol({name: "monkey", rarity: 0, base:1, calculate: async (self)=>{
+						return (6 * await eatType("monkeyLikes", self));    
+					}, beast: 1}),
+
+					MOUSE: new Symbol({name: "mouse", rarity: 0, base:1, calculate: async (self)=>{
+						return (20 * await eat("cheese", self));    
+					}, beast:1}),
+
+					ORE: new Symbol({name: "ore", rarity: 0, base:1, onDestroy: (self)=>{
+						addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE,WAREHOUSE.VOID_STONE]));
+					}, ore:1}),
+
+					OWL: new Symbol({name: "owl", rarity: 0, base:1, execute: async(self)=>{
+						self.timer = self.timer - 1 || 4;
+						if(self.timer == 1){
+							return 1;
+						}
+						return 0;  
+					}, bird: 1, beast: 1}),
+
+					OYSTER: new Symbol({name: "oyster", rarity: 0, base:1, execute: async(self)=>{
+						if(_.random(1, 10) == 10){
+							addSymbol(WAREHOUSE.PEARL)
+						}
+						return 0;
+
+					}, aquatic:1, beast: 1}),
+
+					PEARL: new Symbol({name: "pearl", rarity: 0,  base:1, aquatic:1, rock:1}),
+
+					PRESENT: new Symbol({name: "present", rarity: 0, execute: async(self)=>{
+						self.timer = self.timer - 1 || 13;
+						if(self.timer == 1){
+							destroySymbol(self);
+											 
+							return 10;
+						}
+						return 0;    
+					}, babyLikes:1}),
+
+					SEED: new Symbol({name: "seed", rarity: 0,  base:1, execute:async(self)=>{
+						let result = _.random(1,4);
+						if(result == 1){
+							destroySymbol(self);
+							addSymbol(WAREHOUSE.BANANA)
+						}
+						return 0;
+					}}), //tbd
+					
+					SHINY_PEBBLE: new Symbol({name: "shiny pebble", rarity: 0, base:1, rock:1}),
+
+					SNAIL: new Symbol({name: "snail", rarity: 0, base:0, execute: async(self)=>{
+						self.timer = self.timer - 1 || 5;
+						if(self.timer == 1){
+							return 5;
+						}
+						return 0;  
+					}, aquatic: 1, beast: 1}),
+
+					THREE_SIDED_DIE: new Symbol({name: "d3", rarity: 0, execute: async(self)=>{
+						let result = _.random(1,3);
+						if(result == 1){
+							for (var row of slots){
+								let fR = _.filter(row, (value) => {
+									return value.symbol.name == "gambler";
+								});
+								for (const element of Object.keys(fR)) {
+									fR[element].e.text(fR[element].symbol.name);
+									fR[element].e.css("outline", "white 2px solid");
+									await delay(500);
+									fR[element].e.text("+"+destroySymbol(fR[element]));
+									await delay(500);
+									fR[element].e.css("outline", "none");
+									
+								}
+							}
+						}
+						return result;
+					}, dice: 1}),
+
+					TODDLER: new Symbol({name: "toddler", rarity: 0, base:1, calculate: async (self)=>{
+						return (6 * await eatType("babyLikes", self));    
+					}, human: 1}),
+
+					TURTLE: new Symbol({name: "turtle", rarity: 0, base:0, execute: async(self)=>{
+						self.timer = self.timer - 1 || 4;
+						if(self.timer == 1){
+							return 4;
+						}
+						return 0;  
+					}, aquatic: 1, beast: 1}),
+
+					URN: new Symbol({name: "urn", rarity: 0, base:1, urn: 1, onDestroy: (self)=>{
+						addSymbol(WAREHOUSE.SPIRIT);
+						return 0;
+					}}),
+				//RARITY 1
+					BAR_OF_SOAP: new Symbol({name: "bar of soap", rarity: 1, base:1, execute: async(self)=>{
+						self.timer = self.timer - 1 || 4;
+						await delay(200);
+						addSymbol(WAREHOUSE.BUBBLE);
+						if(self.timer == 1){
+							destroySymbol(self);
+											 
+						}
+						return 0;    
+					}}),
+
+					BEAR: new Symbol({name: "bear", rarity: 1,base:2, beast: 1}),
+
+					BIG_ORE: new Symbol({name: "big ore", rarity: 1,  base:2, onDestroy: (self)=>{
+						addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE,WAREHOUSE.VOID_STONE]));
+						addSymbol(_.sample([WAREHOUSE.SAPPHIRE, WAREHOUSE.PEARL, WAREHOUSE.SHINY_PEBBLE,WAREHOUSE.VOID_STONE]));
+					}, ore:2}),
+
+					BIG_URN: new Symbol({name: "big urn", rarity: 1,  base:2, urn:2, onDestroy: (self)=>{
+						addSymbol(WAREHOUSE.SPIRIT);
+						addSymbol(WAREHOUSE.SPIRIT);
+						return 0;
+					}}),
+
+					BILLIONAIRE: new Symbol({name: "billionaire", rarity: 1, base:0, calculate: async(self)=>{
+						await bonusType("richLikes", self, "x2")
+						return 0;    //tbd
+					}, onDestroy: (self)=>{
+						return 39;
+					},}),
+
+					BRONZE_ARROW: new Symbol({name: "bronze arrow", rarity: 1, base:0, execute: async(self)=>{
+						for (element of slots[self.x]){
+							if(element != self) await giveBonus(element,self,"x2", 100);
+						}
+						return 0;  //placeholder   tbd
+					}}),
+
+					FIVE_SIDED_DIE: new Symbol({name: "d5", rarity: 1, execute: async(self)=>{
+						let result = _.random(1,5);
+						if(result == 1){
+							for (var row of slots){
+								let fR = _.filter(row, (value) => {
+									return value.symbol.name == "gambler";
+								});
+								for (const element of Object.keys(fR)) {
+									fR[element].e.css("opacity", "1.0");
+									fR[element].e.css("outline", "white 2px solid");
+									await delay(500);
+									fR[element].e.text("+"+destroySymbol(fR[element]));
+									await delay(500);
+									fR[element].e.css("outline", "none");
+									
+								}
+							}
+						}
+						return result;
+					}, dice: 2}),
+
+					COCONUT: new Symbol({name: "coconut", rarity: 1, base:1, onDestroy: (self)=>{
+						addSymbol(WAREHOUSE.COCONUT_HALF);
+						addSymbol(WAREHOUSE.COCONUT_HALF);
+					}, food: 1, monkeyLikes: 1, fruit: 1,}),
+					COCONUT_HALF: new Symbol({name: "coconut half", rarity: 1, food: 1, base:2, monkeyLikes: 1, fruit: 1,}),
+					ORANGE: new Symbol({name: "orange", rarity: 1, food: 1, base:2, fruit: 1,}),
+					PEACH: new Symbol({name: "peach", rarity: 1, base:1, onDestroy: (self)=>{
+						addSymbol(WAREHOUSE.SEED);
+					}, fruit: 1, food: 1}),
+					
+					DIAMONDS: new Symbol({name: "diamonds", rarity: 1, base:1, redSuit:1,}), //tbd
+					HEARTS: new Symbol({name: "hearts", rarity: 1, base:1, redSuit:1,}), //tbd
+					SPADES: new Symbol({name: "spades", rarity: 1, base:1, blueSuit:1,}), //tbd
+					CLUBS: new Symbol({name: "clubs", rarity: 1, base:1, blueSuit:1,}), //tbd
+
+					GOLEM: new Symbol({name: "golem", rarity: 1, base:1, execute: async(self)=>{
+						self.timer = self.timer - 1 || 6;
+						if(self.timer == 1){
+							destroySymbol(self);
+							_.times(5,()=>{addSymbol(WAREHOUSE.ORE)});
+							
+						}
+						return 0;   
+					}, beast: 1}),
+
+					HOOLIGAN: new Symbol({name: "hooligan", rarity: 1, base:1, calculate: async (self)=>{
+						return 6 * await eatType("urn", self); 
+					}, human:1}),
+
+					PINATA: new Symbol({name: "pinata", rarity: 1, base:1, onDestroy: (self)=>{
+						_.times(7, ()=>{addSymbol(WAREHOUSE.CANDY);}); 
+					}, babyLikes: 1,}),
+
+					SAFE: new Symbol({name: "safe", rarity: 1, base:1, box: 30}),
+
+					SAPPHIRE: new Symbol({name: "sapphire", rarity: 1, base:2, rock: 2}),
+
+					THIEF: new Symbol({name: "thief", rarity: 1, base:-1, execute: async(self)=>{
+						self.savings = self.savings+4 || 1;
+						return 0;    
+					}, onDestroy: (self)=>{
+						return self.savings || 1;
+					},  human: 1}),
+
+					VOID_CREATURE: new Symbol({name: "void creature", rarity: 1, base:1, execute: async(self)=>{
+						let result = await bonus("empty", self, 2);
+						if(result == 0){
+							destroySymbol(self);
+							
+							return 7;
+						}
+						return 0;    
+					}, beast: 1}),
+					VOID_FRUIT: new Symbol({name: "void fruit", rarity: 1, base:1, execute: async(self)=>{
+						let result = await bonus("empty", self, 2);
+						if(result == 0){
+							destroySymbol(self);
+							
+							return 7;
+						}
+						return 0;    
+					}, food: 1}),
+					VOID_STONE: new Symbol({name: "void stone", rarity: 1, base:1, execute: async(self)=>{
+						let result = await bonus("empty", self, 2);
+						if(result == 0){
+							destroySymbol(self);
+							
+							return 7;
+						}
+						return 0;    
+					}}),
+
+					WEALTHY_CAPSULE: new Symbol({name: "lucky capsule", rarity: 1, base:10, execute: async(self)=>{
+						destroySymbol(self);
+						
+						return 0;
+					}}),
+					BUFFING_CAPSULE: new Symbol({name: "buffing powder", rarity: 1, base:0, execute: async(self)=>{
+						await bonusType("name",self,"x2")
+						destroySymbol(self);
+						return 0;
+					}}),
+					ESSENCE_CAPSULE: new Symbol({name: "essence capsule", rarity: 1, base:-12, execute: async(self)=>{
+						player.tokens++;
+						destroySymbol(self);
+						return 0;
+					}}),
+					REMOVAL_CAPSULE: new Symbol({name: "removal capsule", rarity: 1, base:0, execute: async(self)=>{
+						player.removals++;
+						destroySymbol(self);
+						return 0;
+					}}),
+					REROLL_CAPSULE: new Symbol({name: "reroll capsule", rarity: 1, base:0, execute: async(self)=>{
+						player.rerolls++;
+						destroySymbol(self);
+						return 0;
+					}}),
+					HUSTLING_CAPSULE: new Symbol({name: "hustler", rarity: 1, base:-7, execute: async(self)=>{
+						addItem(STOREROOM.POOL_BALL)
+						destroySymbol(self);
+						return 0;
+					}}),
+					ITEM_CAPSULE: new Symbol({name: "item capsule", rarity: 1, base:0, execute: async(self)=>{
+						let fR = _.filter(STOREROOM, (value) => {
+							return value.rarity == 0;
+						});
+						
+						addItem(_.sample(fR));
+						destroySymbol(self);
+						return 0;
+					}}),
+					LUCKY_CAPSULE: new Symbol({name: "rarity capsule", rarity: 1, base:0, execute: async(self)=>{
+						let fR = _.filter(WAREHOUSE, (value) => {
+							return value.rarity == 2;
+						});
+						
+						addSymbol(_.sample(fR));
+						destroySymbol(self);
+						return 0;
+					}}),
+					TEDIUM_CAPSULE: new Symbol({name: "tedium capsule", rarity: 1, base:5, execute: async(self)=>{
+						let fR = _.filter(WAREHOUSE, (value) => {
+							return value.rarity == 0;
+						});
+						
+						addSymbol(_.sample(fR));
+						destroySymbol(self);
+						return 0;
+					}}),
+					TIME_CAPSULE: new Symbol({name: "time capsule", rarity: 1, base:0, execute: async(self)=>{
+						addSymbol(_.sample(deletionHistory).symbol);
+						destroySymbol(self);
+						return 0;
+					}}),
+					CHEMICAL_SEVEN: new Symbol({name: "chemical seven", rarity: 1, base:7, execute: async(self)=>{
+						destroySymbol(self);
+						return 0;
+					}}),
+
+					WINE: new Symbol({name: "wine", rarity: 1, base:2, alch: 2, richLikes:1, execute: async(self)=>{
+						self.timer = self.timer - 1 || 9;
+						if(self.timer == 1){
+							self.timer = 2;
+							return 1;
+						}
+						return 0;  
+					}, food: 1}),
+
+					HEX_OF_MIDAS: new Symbol({name: "hex of midas", rarity: 1, base:3, execute: async(self)=>{
+						let result = _.random(1,3);
+						if(result == 1){
+							addSymbol(WAREHOUSE.COIN)
+						}
+						return 0;
+					}, hex: 1}),
+					HEX_OF_THIEVERY: new Symbol({name: "hex of thievery", rarity: 1, base:3, execute: async(self)=>{
+						let result = _.random(1,3);
+						if(result == 1){
+							return -9;
+						}
+						return 0;
+					}, hex: 1}),
+					HEX_OF_TEDIUM: new Symbol({name: "hex of tedium", rarity: 1, base:3, hex:1}),
+					HEX_OF_EMPTINESS: new Symbol({name: "hex of emptiness", rarity: 1, base:3, execute: async(self)=>{
+						let result = _.random(1,3);
+						if(result == 1){
+							hexxed = 1;
+						}
+						return 0;
+					}, hex: 1}),
+					HEX_OF_HOARDING: new Symbol({name: "hex of hoarding", rarity: 1, base:3, execute: async(self)=>{
+						let result = _.random(1,3);
+						if(result == 1){
+							hexxed = 2;
+						}
+						return 0;
+					}, hex: 1}),
+					HEX_OF_DRAINING: new Symbol({name: "hex of draining", rarity: 1, base:3, execute: async(self)=>{
+						let result = _.random(1,3);
+						if(result == 1){
+							let eenieMeenieMinieMoe = _.random(0,adjacentSlots(self.y, self.x).length);
+							for (element of adjacentSlots(self.y, self.x)){
+								if (eenieMeenieMinieMoe == 0){
+									await bonusType("name",self,"x0");
+									return 0;
+								}
+								eenieMeenieMinieMoe--;
+							}
+						}
+						return 0;
+					}, hex: 1}),
+					HEX_OF_DESTRUCTION: new Symbol({name: "hex of destruction", rarity: 1, base:3, execute: async(self)=>{
+						let result = _.random(1,3);
+						if(result == 1){
+							let eenieMeenieMinieMoe = _.random(0,adjacentSlots(self.y, self.x).length);
+							for (element of adjacentSlots(self.y, self.x)){
+								if (eenieMeenieMinieMoe == 0){
+									destroySymbol(element);
+									return 0;
+								}
+								eenieMeenieMinieMoe--;
+							}
+						}
+						return 0;
+					}, hex: 1}),
+
+					RABBIT: new Symbol({name: "rabbit", rarity: 1, base:1, execute: async(self)=>{
+						self.timer = self.timer - 1 || 11;
+						if(self.timer == 1){
+							self.timer = 2;
+							return 2;
+						}
+						return 0;  
+					}, beast: 1}),
+					RABBIT_FLUFF: new Symbol({name: "rabbit fluff", rarity: 1, base:2}),
+					WOLF: new Symbol({name: "wolf", rarity: 1, base:2, beast: 1}),
+
+					RAIN: new Symbol({name: "rain", rarity: 1, base:2, calculate: async(self)=>{
+						return await bonus("flower", self, "x2");
+					}}),
+
+					NINJA: new Symbol({name: "ninja", rarity: 1,base:2, execute: async(self)=>{
+						let result = 1;
+						for (var row of slots){
+							let fR = _.filter(row, (value) => {
+								return value.symbol.name == "ninja";
+							});
+							result -= fR.length;
+						}
+						return result;
+					}}),
+					JELLYFISH: new Symbol({name: "jellyfish", rarity: 1, base:2, onDestroy: (self)=>{
+						player.removals++;
+					},  aquatic: 1, beast: 1}),
+					SAND_DOLLAR: new Symbol({name: "sand dollar", rarity: 1, base:2, onDestroy: (self)=>{
+						return 10;
+					},  aquatic: 1, beast: 1}),
+					SLOTH: new Symbol({name: "sloth", rarity: 1, base:0, execute: async(self)=>{
+						self.timer = self.timer - 1 || 3;
+						if(self.timer == 1){
+							return 4;
+						}
+						return 0;  
+					}, beast: 1}),
+
+					TARGET: new Symbol({name: "target", rarity: 1, base:2, execute: async(self)=>{
+						for (element of slots[self.x]){
+							if (element.symbol.name.includes("arrow")){
+								destroySymbol(self);
+								return 10;
+							}
+						}
+						return 0;
+					}}),
+				//RARITY 2
+					APPLE: new Symbol({name: "apple", rarity: 2, base:3,}),
+					BARTENDER: new Symbol({name: "bartender", rarity: 2, base:3, execute: async(self)=>{
+						if(_.random(1, 10) == 10){
+							addSymbol(WAREHOUSE.WINE)
+						}
+						return 0;
+
+					}, human:1}),
+					BEASTMASTER: new Symbol({name: "beastmaster", rarity: 2, base:2, execute: async(self)=>{
+						await bonusType("beast",self,"x2");
+						return 0;
+					}}),
+					CHEF: new Symbol({name: "chef", rarity: 2, base:2, execute: async(self)=>{
+						await bonusType("food",self,"x2");
+						return 0;
+					}, human:1}),
+					COW: new Symbol({name: "cow", rarity: 2, base:3, execute: async(self)=>{
+						if(_.random(1, 5) == 1){
+							addSymbol(WAREHOUSE.MILK)
+						}
+						return 0;
+
+					}, beast:1}),
+					DAME: new Symbol({name: "dame", rarity: 2, base:2, execute: async(self)=>{
+						await bonusType("gem",self,"x2");
+						return 0;
+					}, human:1}),
+					GENERAL_ZAROFF: new Symbol({name: "general zaroff", rarity: 2,base:1, calculate: async (self)=>{
+						return 25 * await eatType("human", self);   
+					}, human:1}),
+					KING_MIDAS: new Symbol({name: "king midas", rarity: 2, base:1, execute: async(self)=>{
+						await bonus("coin",self,"x2");
+						addSymbol(WAREHOUSE.COIN)
+						return 0;
+					}, human:1}),
+					MAGIC_KEY: new Symbol({name: "magic key", rarity: 2, base:2, calculate: async(self)=>{
+						let findBoxes = await eatType("box", self); 
+						if (findBoxes > 0){
+							destroySymbol(self);
+						}
+						return findBoxes * 3;
+					}}),
+					MINE: new Symbol({name: "mine", rarity: 2, base:4, execute: async(self)=>{
+						self.timer = self.timer - 1 || 5;
+						await delay(200);
+						addSymbol(WAREHOUSE.BIG_ORE);
+						if(self.timer == 1){
+							destroySymbol(self);
+										  
+						}
+						return 0;    
+					}}),
+					SPIRIT: new Symbol({name: "spirit", rarity: 2, base:6, execute: async(self)=>{
+						self.timer = self.timer - 1 || 5;
+						if(self.timer == 1){
+							destroySymbol(self);
+						}
+						return 0;    
+					}, beast:1}),
+					TOMB: new Symbol({name: "tomb", rarity: 2, base:3, urn:3, execute: async(self)=>{
+						if(_.random(1, 20) == 1){
+							addSymbol(WAREHOUSE.SPIRIT)
+						}
+						return 0;
+
+					}, onDestroy: (self)=>{
+						addSymbol(WAREHOUSE.SPIRIT);
+						addSymbol(WAREHOUSE.SPIRIT);
+						addSymbol(WAREHOUSE.SPIRIT);
+						addSymbol(WAREHOUSE.SPIRIT);
+						return 0;
+					}}),
+					TREASURE_CHEST: new Symbol({name: "treasure chest", rarity: 2, base:2,  box: 50}),
+					WITCH: new Symbol({name: "witch", rarity: 2, base:2, execute: async(self)=>{
+						await bonusType("hex",self,"x2");
+						await bonus("cat",self,"x2");
+						await bonus("spirit",self,"x2");
+						await bonus("crow",self,"x2");
+						await bonus("owl",self,"x2");
+						await bonus("apple",self,"x2");
+
+						return 0;
+					}}),
+					SILVER_ARROW: new Symbol({name: "silver arrow", rarity: 2, base:0, execute: async(self)=>{
+						for (element of slots[self.x]){
+							if(element != self) await giveBonus(element,self,"x3", 100);
+						}
+						return 0;  //placeholder   tbd
+					}}),
+				//RARITY 3
+					DIAMOND: new Symbol({name: "diamond", rarity:3,base:5, execute: async(self)=>{
+						let result = 1;
+						for (var row of slots){
+							let fR = _.filter(row, (value) => {
+								return value.symbol.name == "ninja";
+							});
+							result += fR.length;
+						}
+						return result;
+					}}),
+					GOLDEN_ARROW: new Symbol({name: "golden arrow", rarity: 3, base:1, execute: async(self)=>{
+						for (element of slots[self.x]){
+							if(element != self) await giveBonus(element,self,"x4", 100);
+						}
+						return 0;  //placeholder   tbd
+					}}),
+					MEGA_CHEST: new Symbol({name: "mega chest", rarity: 3, base:2, box: 100}),
+					WILDCARD: new Symbol({name: "wildcard", rarity: 3, calculateLater: async(self)=>{
+						let result = 0;
+						for (element of adjacentSlots(self.y, self.x)){
+							if (element.finalOutput > result){
+								result = element.finalOutput
+							}
+						}
+						
+						return result;
+					}}),
+				}; 
+				const STOREROOM = {
+					ANTHROPOLOGY_DEGREE: {name:"Anthropology Degree", rarity:2, calculate: (self,context,base)=>{
+						if (typeof context == typeof STOREROOM){
+							return context.symbol.human?1:0;
+						}else { return 0; }
+					}},
+					BIRDHOUSE: {name:"Birdhouse", rarity:0, calculate: (self,context,base)=>{
+						if (typeof context == typeof STOREROOM){
+							return context.symbol.bird?1:0;
+						}else { return 0; }
+					}},
+					RICKY_THE_BANANA: {name:"Ricky the Banana", rarity:0, calculate: (self,context,base)=>{
+						if (typeof context == typeof STOREROOM){
+							return context.symbol.name.includes("banana")?2:0;
+						}else { return 0; }
+					}},
+					OSWALD_THE_MONKEY: {name:"Oswald the Monkey", rarity:0, calculate: (self,context,base)=>{
+						if (typeof context == typeof STOREROOM){
+							return context.symbol.name.includes("monkey")?base:0;
+						}else { return 0; }
+					}},
+					PIZZA_THE_CAT: {name:"Pizza the Cat", rarity:0, calculate: (self,context,base)=>{
+						if (typeof context == typeof STOREROOM){
+							return context.symbol.name.includes("cat")?1:0;
+						}else { return 0; }
+					}},
+					KYLE_THE_KERNITE: {name:"Kyle the Kernite", rarity:0, calculate: (self,context,base)=>{
+						if (typeof context == typeof STOREROOM){
+							return context.symbol.ore || context.symbol == WAREHOUSE.SHINY_PEBBLE?1:0;
+						}else { return 0; }
+					}},
+					JACKOLANTERN: {name:"Jackolantern", rarity:0, calculate: (self,context,base)=>{
+						if (typeof context == typeof STOREROOM){
+							return context.symbol == WAREHOUSE.TODDLER || context.symbol == WAREHOUSE.CANDY?1:0;
+						}else { return 0; }
+					}},
+					NORI_THE_RABBIT: {name:"Nori the Rabbit", rarity:0, calculate: (self,context,base)=>{
+						if (typeof context == typeof STOREROOM){
+							return context.symbol.name.includes("rabbit")?1:0;
+						}else { return 0; }
+					}},
+					BLACK_CAT: {name:"Black Cat",rarity:1, calculate: (self,context,base)=>{
+						if (typeof context == typeof STOREROOM){
+							return context.symbol.name == "cat"?base:0;
+						}else if(context == "onCount"){
+							return base%0==0?9:0;
+						} else { return 0; }
+					}},
+					BLACK_PEPPER: {name:"Black Pepper",rarity:0, calculate: (self,context,base)=>{
+						if(context == "onCount"){
+							let old = self.count || 0;
+							self.count = 0;
+							return old;
+						} else if(context == "onDestroy"){
+							self.count = self.count+1 || 1;
+							return 0;
+						} else { return 0; }
+					}},
+					BROWN_PEPPER: {name:"Brown Pepper",rarity:0, calculate: (self,context,base)=>{
+						if(context == "onCount"){
+							let old = self.count || 0;
+							self.count = 0;
+							return old;
+						} else if(context == "onAdded"){
+							self.count = self.count+1 || 1;
+							return 0;
+						} else { return 0; }
+					}},
+					BOWLING_BALL: {name:"Bowling Ball",rarity:3, calculate: (self,context,base)=>{
+						if(context == "onCount"){
+							return 3;
+						} else { return 0; }
+					}},
+					POOL_BALL: {name:"Pool Ball",rarity:0, calculate: (self,context,base)=>{
+						if(context == "onCount"){
+							return 1;
+						} else { return 0; }
+					}},
+					BLUE_PEPPER: {name:"Blue Pepper",rarity:0, calculate: (self,context,base)=>{
+						if(context == "onCount"){
+							let nothings = player.inventory.filter((a)=>{return a.symbol.name == "empty"});
+							if (nothings.length >=3) return 3;
+							return 0;
+						} else { return 0; }
+					}},
+					CYAN_PEPPER: {name:"Cyan Pepper",rarity:0, calculate: (self,context,base)=>{
+						if(context == "onCount"){
+							
+							let counts = {};
+							let sampleArray = _.flatten(slots);
+							sampleArray.forEach(function (x) {if(x.symbol.name == "empty"){return;} counts[x.symbol.name] = (counts[x.symbol.name] || 0) + 1; });
+							
+							// alert(JSON.stringify(sampleArray));
+							// alert(JSON.stringify(counts))
+							if(_.any(counts, (x)=>{return x >=3})){
+								return 0;
+							}
+							return 3;
+						} else { return 0; }
+					}},
+					GREEN_PEPPER: {name:"Green Pepper",rarity:0, calculate: (self,context,base)=>{
+						if(context == "onCount"){
+							
+							let counts = {};
+							let sampleArray = _.flatten(slots);
+							sampleArray.forEach(function (x) {if(x.symbol.name == "empty"){return;} counts[x.symbol.name] = (counts[x.symbol.name] || 0) + 1; });
+							
+							// alert(JSON.stringify(sampleArray));
+							// alert(JSON.stringify(counts))
+							if(_.any(counts, (x)=>{return x >=3})){
+								return 3;
+							}
+							return 0;
+						} else { return 0; }
+					}},
+					RED_PEPPER: {name:"Red Pepper",rarity:0, calculate: (self,context,base)=>{
+						if(context == "onCount"){
+							
+							let counts = {};
+							let sampleArray = _.flatten(slots);
+							sampleArray.forEach(function (x) {if(x.symbol.name == "empty"){return;} counts[x.symbol.name] = (counts[x.symbol.name] || 0) + 1; });
+							
+							// alert(JSON.stringify(sampleArray));
+							// alert(JSON.stringify(counts))
+							if(_.any(counts, (x)=>{return x > 1})){
+								return 0;
+							}
+							return 5;
+						} else { return 0; }
+					}},
+					FISH_TANK: {name:"Fish Tank",rarity:0, calculate: (self,context,base)=>{
+						if(context == "onCount"){
+							let old = self.count || 0;
+							return old;
+						} else if (typeof context == typeof STOREROOM){
+							if (context.symbol.name == "goldfish"){
+								self.count = (self.count || 0) + 1;
+								destroySymbol(context);
+							}
+							return 0;
+						} else { return 0; }
+					}},
+					DWARVEN_ANVIL: {name:"Dwarven Anvil",rarity:0, calculate: (self,context,base)=>{
+						WAREHOUSE.ORE.alch = 1
+						WAREHOUSE.BIG_ORE.alch = 1
+
+						if (typeof context == typeof STOREROOM){
+							return context.symbol.name == "dwarf"?base:0;
+						}else if(context == "onCount"){ 
+							return base%0==0?9:0;
+						} else { return 0; }
+					}},
+				};
+			//}End of WAREHOUSE (EOW)
+			
+			init();
+		</script>
+	</body>
 </html>
