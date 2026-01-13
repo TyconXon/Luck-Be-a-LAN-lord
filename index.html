@@ -301,8 +301,7 @@
 		</style>
 
 		<script>
-			const satisfyingWrapper = document.getElementsByClassName('satisfactionWrapper')[0];
-			const satisfyingElement = document.getElementsByClassName('satisfaction')[0];
+			
 			
 			function snapped(value, increment) {
 				return Math.round(value / increment) * increment;
@@ -563,6 +562,9 @@
 			const rentPrice = [25,50,100,150,225,300,350,425,575,625,675,777,1000];
 			const STATES = {"idle":1,"reading":2,"spinning":3,"executing":4,"counting":5,"choosing":6, "dead":-1};
 			
+			const satisfyingWrapper = document.getElementsByClassName('satisfactionWrapper')[0];
+			const satisfyingElement = document.getElementsByClassName('satisfaction')[0];
+
 			var g_reroll = 2;
 			var g_removal = 2;
 			var g_essence = 2;
@@ -903,6 +905,7 @@
 			$('#mailInterface').draggable({ handle: '#reminder', revert: true });
 
 			var started = false;
+			
 			async function init(){
 				_.times(20, (n)=>{
 					let x = Math.floor(n/5);
@@ -973,20 +976,7 @@
 				$("#skipButton")[0].disabled = false;
 				player.status = STATES.idle;
 			}
-			
-			async function spin(){
-				if (player.status != STATES.idle) return;
-				// await email("a","b");
-				// await email("d","c");
-
-				player.spins -= 1;
-				player.coins -= 1;
-				if ( player.coins < 0 ){
-					// await email("Your landlord.","You don't have enough money to spin and you've been evicted!");
-					// return;
-					// this funcitonality isn't even real, supposedly?
-				}
-				
+			async function rollSlots(){
 				player.status = STATES.spinning;
 				let modifiedInventory = player.inventory;
 				queuedAdditions = [];
@@ -1006,6 +996,15 @@
 					
 				}
 				$(`#s${x}x${y}y`).css("scale", "1");
+			}
+			
+			async function spin(){
+				if (player.status != STATES.idle) return;
+				player.spins -= 1;
+				player.coins -= 1;
+		
+				
+				await rollSlots();
 
 
 				player.status = STATES.counting;
@@ -1026,11 +1025,10 @@
 						await delay(500);
 					}
 				}
-				try {
-					
-					let empties = false;
-					//before hand calculations
-				do{
+				
+				let empties = false;
+				//before hand calculations
+				do {
 					empties = false;
 					//Attempt to resolve queue
 					for (const rows of slots) {
@@ -1137,7 +1135,7 @@
 						}
 					}
 					
-				}while((queuedAdditions.length && empties) || queuedDeletions.length)
+				} while ( (queuedAdditions.length && empties) || queuedDeletions.length )
 
 
 				let uniqueValues = _.sortBy(_.uniq(collective.flat()), (a)=>{return a})
@@ -1178,9 +1176,6 @@
 						await satisfactionTextUpdate(`${item.name} : ${itemMod}`, $("#inv")[0], `rgba(${25*itemMod},255,0,0.75)`);
 						await delay(500);
 					}
-				}
-				} catch (error) {
-					alert(error)
 				}
 				player.history.push(predictedCoins)
 				player.last = predictedCoins;

@@ -50,9 +50,9 @@ document.addEventListener("keyup",(ev)=>{
     if(ev.key == "`"){
       window.stdlog("Console: \n" + JSON.stringify(console.everything) + "\n Alerts: \n" + JSON.stringify(window.logs));
     }
-    // if(ev.key == "~"){
-    //   let input = prompt('>');
-    //   window.stdlog(eval(input));
-    //   // if(sv_cheats == 1) {$("#peppino").show()};
-    // }
+    if(ev.key == "~"){
+      let input = prompt('>');
+      window.stdlog(eval(input));
+      // if(sv_cheats == 1) {$("#peppino").show()};
+    }
 })
